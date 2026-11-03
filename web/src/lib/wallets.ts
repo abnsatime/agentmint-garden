@@ -164,12 +164,11 @@ function injectedRank(name: string) {
 /**
  * Whether the connect action should show the wallet list first.
  *
- * A single named wallet can connect immediately; a lone "Injected" connector cannot, because
- * that name says nothing about which extension will answer.
+ * Only a real choice is worth a click: with exactly one connector there is nothing to pick,
+ * whatever it is called. When no wallet is visible the caller renders the empty state instead.
  */
 export function shouldAskForWallet(connectors: ReadonlyArray<{ name: string }>): boolean {
-  if (connectors.length !== 1) return true;
-  return connectors[0].name.toLowerCase() === "injected";
+  return connectors.length > 1;
 }
 
 /** Turns wallet-provider failures into something a visitor can act on. */

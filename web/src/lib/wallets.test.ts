@@ -87,12 +87,14 @@ describe("wallet picker policy", () => {
     expect(shouldAskForWallet([{ name: "Browser wallet" }])).toBe(false);
   });
 
-  it("asks for a generic injected connector", () => {
-    expect(shouldAskForWallet([{ name: "Injected" }])).toBe(true);
+  it("connects straight away through a lone generic connector", () => {
+    // One connector means one wallet; the anonymous name gives no alternative to offer.
+    expect(shouldAskForWallet([{ name: "Injected" }])).toBe(false);
   });
 
-  it("asks when nothing is installed", () => {
-    expect(shouldAskForWallet([])).toBe(true);
+  it("does not ask when nothing is installed", () => {
+    // The caller renders the no-wallet empty state instead of an empty picker.
+    expect(shouldAskForWallet([])).toBe(false);
   });
 });
 
