@@ -78,7 +78,31 @@ export function useGarden() {
     void balanceRead.refetch();
   }, [supplyRead, pausedRead, mintedByRead, balanceRead]);
 
+  const reads = [
+    supplyRead,
+    priceRead,
+    pausedRead,
+    maxSupplyRead,
+    freeSupplyRead,
+    maxPerWalletRead,
+    mintedByRead,
+  ];
+  const failed = reads.find((read) => read.isError);
+  const anyError = Boolean(failed);
+  const status: "loading" | "ready" | "error" = anyError
+    ? "error"
+    : supplyRead.isLoading
+      ? "loading"
+      : "ready";
+
   return {
+    status,
+    error:
+      (failed?.error as { shortMessage?: string; message?: string } | undefined)?.shortMessage ??
+      (failed?.error as { message?: string } | undefined)?.message?.split("\n")[0] ??
+      null,
+    isFetching: reads.some((read) => read.isFetching) || balanceRead.isFetching,
+    hasData: supplyRead.data !== undefined,
     supply: supplyRead.data ?? 0n,
     price: priceRead.data ?? 0n,
     policy,

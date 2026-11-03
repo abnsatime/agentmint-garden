@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { parseEventLogs } from "viem";
+import { encodeFunctionData, parseEventLogs } from "viem";
 import { readContract } from "wagmi/actions";
 import {
   useAccount,
@@ -16,9 +16,11 @@ import { useWalletChain } from "@/lib/use-wallet-chain";
 import { ArtPreview } from "./art-preview";
 import { MintedToken } from "./minted-token";
 import { agentMintGardenAbi, gardenAddress, transactionExplorerUrl } from "@/lib/contracts";
+import { stateClient } from "@/lib/log-client";
 import {
   BLOCKER_COPY,
   decodeMintError,
+  formatGasFee,
   formatTbnb,
   maxQuantity,
   mintBlocker,
@@ -34,7 +36,19 @@ import { describeConnectError, shouldAskForWallet, uniqueConnectorsByName } from
 
 export function MintPanel() {
   const { address, isConnected } = useAccount();
-  const { supply, price, policy, paused, mintedBy, balance, refetchAll } = useGarden();
+  const {
+    supply,
+    price,
+    policy,
+    paused,
+    mintedBy,
+    balance,
+    status: gardenStatus,
+    hasData,
+    error: gardenError,
+    isFetching,
+    refetchAll,
+  } = useGarden();
   const { chainId: walletChainId, switchToTestnet } = useWalletChain();
   const walletAvailable = useWalletAvailability();
   const config = useConfig();
@@ -73,6 +87,50 @@ export function MintPanel() {
   const paidPart = paidQuantityFor(supply, BigInt(quantity), policy.freeSupply);
   const freePart = BigInt(quantity) - paidPart;
 
+  // Gas is not part of the mint price, but a visitor deserves to see it before signing.
+  const [gasEstimate, setGasEstimate] = useState<{ gas: bigint; price: bigint } | null>(null);
+  const [gasStatus, setGasStatus] = useState<"idle" | "loading" | "ready" | "error">("idle");
+
+  useEffect(() => {
+    if (!isConnected || !address) return;
+    let cancelled = false;
+
+    (async () => {
+      setGasStatus("loading");
+      try {
+        const data = encodeFunctionData({
+          abi: agentMintGardenAbi,
+          functionName: "mint",
+          args: [BigInt(quantity)],
+        });
+        const [gas, gasPrice] = await Promise.all([
+          stateClient.estimateGas({
+            account: address,
+            to: gardenAddress,
+            data,
+            value: quote,
+          }),
+          stateClient.getGasPrice(),
+        ]);
+        if (!cancelled) {
+          setGasEstimate({ gas, price: gasPrice });
+          setGasStatus("ready");
+        }
+      } catch {
+        if (!cancelled) {
+          setGasEstimate(null);
+          setGasStatus("error");
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isConnected, address, quantity, quote]);
+
+  const gasFee = gasEstimate ? formatGasFee(gasEstimate.gas, gasEstimate.price) : null;
+
   const blocker = mintBlocker({
     isConnected,
     chainId: walletChainId,
@@ -85,6 +143,8 @@ export function MintPanel() {
     quantity,
     balance,
     walletAvailable: walletAvailable ?? undefined,
+    rpcError: gardenStatus === "error",
+    readPending: !hasData,
   });
   const copy = BLOCKER_COPY[blocker];
   // A wrong network and a missing connection are both things the button itself can fix,
@@ -214,11 +274,26 @@ export function MintPanel() {
             <dt>Paid at {formatTbnb(price)} tBNB</dt>
             <dd>{paidPart.toString()}</dd>
           </div>
+          <div className="quote-row">
+            <dt>Network fee (estimate)</dt>
+            <dd>
+              {gasStatus === "ready" && gasFee ? `≈ ${gasFee} tBNB` : null}
+              {gasStatus === "loading" && <span className="quote-muted">estimating…</span>}
+              {gasStatus === "error" && <span className="quote-muted">unavailable</span>}
+              {gasStatus === "idle" && <span className="quote-muted">connect to estimate</span>}
+            </dd>
+          </div>
           <div className="quote-row quote-total">
             <dt>You pay</dt>
             <dd>{formatTbnb(quote)} tBNB</dd>
           </div>
         </dl>
+        {gasStatus === "ready" && gasEstimate && (
+          <p className="gas-note">
+            {gasEstimate.gas.toString()} gas at {formatTbnb(gasEstimate.price)} tBNB/gas · the
+            wallet shows the final figure
+          </p>
+        )}
 
         <button
           className="cta"
@@ -252,6 +327,18 @@ export function MintPanel() {
               ? "Your wallet will show the same amount before you sign."
               : copy.detail}
         </p>
+
+        {gardenStatus === "error" && (
+          <p className="status status-error">
+            {gardenError ?? "The read endpoint did not answer."}{" "}
+            <button className="retry-link" onClick={() => refetchAll()} type="button">
+              Retry
+            </button>
+          </p>
+        )}
+        {gardenStatus === "ready" && isFetching && (
+          <p className="fetch-note">refreshing contract state…</p>
+        )}
 
         <div aria-live="polite" className="mint-status">
           {errorText && <p className="status status-error">{errorText}</p>}

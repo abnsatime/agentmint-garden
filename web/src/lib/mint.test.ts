@@ -4,6 +4,7 @@ import {
   decodeMintError,
   decodeTokenUri,
   fallbackPolicy,
+  formatGasFee,
   formatTbnb,
   freeSupplyRemaining,
   hueForToken,
@@ -107,6 +108,40 @@ describe("mint gate", () => {
     expect(mintBlocker(gate({ walletAvailable: false }))).toBe("none");
   });
 
+  it("blocks when contract reads failed", () => {
+    expect(mintBlocker(gate({ rpcError: true }))).toBe("rpc");
+  });
+
+  it("reports a wrong network before an RPC failure", () => {
+    expect(mintBlocker(gate({ chainId: 1, rpcError: true }))).toBe("network");
+  });
+
+  it("reports a missing connection before an RPC failure", () => {
+    expect(mintBlocker(gate({ isConnected: false, rpcError: true }))).toBe("connect");
+  });
+
+  it("reports an RPC failure before the contract state it cannot read", () => {
+    expect(mintBlocker(gate({ rpcError: true, paused: true }))).toBe("rpc");
+    expect(mintBlocker(gate({ rpcError: true, supply: 2_000n }))).toBe("rpc");
+  });
+
+  it("waits for the first read instead of guessing a price", () => {
+    expect(mintBlocker(gate({ readPending: true }))).toBe("loading");
+  });
+
+  it("reports an RPC failure before a pending read", () => {
+    expect(mintBlocker(gate({ readPending: true, rpcError: true }))).toBe("rpc");
+  });
+
+  it("does not report contract state while the first read is pending", () => {
+    expect(mintBlocker(gate({ readPending: true, paused: true }))).toBe("loading");
+    expect(mintBlocker(gate({ readPending: true, supply: 2_000n }))).toBe("loading");
+  });
+
+  it("treats a completed read as ready", () => {
+    expect(mintBlocker(gate({ readPending: false }))).toBe("none");
+  });
+
   it("asks for a network switch before reporting contract state", () => {
     expect(mintBlocker(gate({ chainId: 56, paused: true }))).toBe("network");
   });
@@ -145,6 +180,8 @@ describe("mint gate", () => {
       "connect",
       "no-wallet",
       "network",
+      "rpc",
+      "loading",
       "paused",
       "sold-out",
       "wallet-limit",
@@ -177,6 +214,18 @@ describe("call to action copy", () => {
 });
 
 describe("formatting", () => {
+  it("estimates a network fee from gas and gas price", () => {
+    expect(formatGasFee(150_000n, 100_000_000n)).toBe("0.000015");
+    expect(formatGasFee(1_855_305n, 132_000_000n)).toBe("0.00024490026");
+  });
+
+  it("returns null instead of a misleading zero", () => {
+    expect(formatGasFee(undefined, 100_000_000n)).toBeNull();
+    expect(formatGasFee(150_000n, undefined)).toBeNull();
+    expect(formatGasFee(0n, 100_000_000n)).toBeNull();
+    expect(formatGasFee(150_000n, 0n)).toBeNull();
+  });
+
   it("formats wei without floating point drift", () => {
     expect(formatTbnb(0n)).toBe("0");
     expect(formatTbnb(PRICE)).toBe("0.001");
