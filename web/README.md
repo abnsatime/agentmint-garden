@@ -38,6 +38,7 @@ environment file.
 ```
 src/app/page.tsx    landing page: hero, live stats, policy, call to action
 src/app/mint/       the mint route: stats, quantity stepper, artwork preview, transaction states
+src/app/gallery/    the gallery route: every minted token, read from tokenURI and GardenMinted logs
 src/app/            layout, providers, globals.css (design tokens)
 src/lib/contracts   address, ABI subset, explorer links
 src/lib/mint        pure logic: pricing mirror, gate states, error decoding, art preview
@@ -46,8 +47,9 @@ src/lib/use-wallet-chain  wallet network truth, switch and add-chain fallback
 src/components/     header, footer, wallet button, stats, mint panel, art preview, policy
 ```
 
-Routes are exported statically: `/` is the landing page and `/mint` is the mint flow, so the
-mint surface can be linked, shared and monitored on its own.
+Routes are exported statically: `/` is the landing page, `/mint` is the mint flow and
+`/gallery` lists every minted token. Public endpoints cap `eth_getLogs` spans, so the gallery
+pages through logs in windows rather than issuing one wide query.
 
 `src/lib/mint.ts` mirrors the on-chain pricing rule and the on-chain SVG generator, which is
 what makes it testable without a node: the unit tests assert the same boundaries the Solidity

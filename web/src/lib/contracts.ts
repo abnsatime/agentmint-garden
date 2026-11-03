@@ -101,6 +101,13 @@ export const agentMintGardenAbi = [
   },
   {
     type: "function",
+    name: "ownerOf",
+    stateMutability: "view",
+    inputs: [{ name: "tokenId", type: "uint256" }],
+    outputs: [{ name: "owner", type: "address" }],
+  },
+  {
+    type: "function",
     name: "quoteMintPrice",
     stateMutability: "view",
     inputs: [{ name: "quantity", type: "uint256" }],
