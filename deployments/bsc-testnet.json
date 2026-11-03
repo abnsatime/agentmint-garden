@@ -74,7 +74,16 @@
   },
   "verification": {
     "provider": "bscscan",
-    "status": "pending",
-    "notes": "Source not yet verified. Runtime bytecode reconciled against a local forge build of commit 8f881e5: the only byte differences are the mintPrice immutable value (18 bytes), and patching them into the local artifact reproduces the on-chain keccak256 exactly."
+    "status": "verified",
+    "result": "Pass - Verified",
+    "matchType": "exact",
+    "guid": "8bhtrifekqrckgdychdyta8knffjdgzivvw7dy64ygbczadsdr",
+    "verifiedAt": "2026-11-03T05:07:42Z",
+    "compilerVersion": "v0.8.26+commit.8a97fa7a",
+    "evmVersion": "cancun",
+    "optimizerRuns": 200,
+    "explorerUrl": "https://testnet.bscscan.com/address/0x5bEd1F9d23FaFdE1A4b81215a2888812494d4107#code",
+    "license": "MIT (SPDX header in source; explorer license field left unset by the verification submission)",
+    "notes": "Exact bytecode match confirmed by BscScan. Independently, the runtime bytecode reconciles byte-for-byte against a local forge build of commit 8f881e5 once the 18 bytes of the mintPrice immutable are patched in."
   }
 }
