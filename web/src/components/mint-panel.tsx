@@ -29,6 +29,7 @@ import {
   type ParsedTransfer,
 } from "@/lib/mint";
 import { useGarden } from "@/lib/use-garden";
+import { shouldAskForWallet } from "@/lib/wallets";
 
 function friendlyConnectError(error: Error) {
   const message = error.message;
@@ -132,7 +133,7 @@ export function MintPanel() {
         );
         return;
       }
-      if (connectors.length === 1) {
+      if (!shouldAskForWallet(connectors)) {
         connect({ connector: connectors[0] });
         return;
       }
