@@ -124,31 +124,41 @@ function rank(name: string) {
   return WALLET_RANK[name] ?? 6;
 }
 
-function injectedHost(): WalletHost | null {
-  if (typeof window === "undefined") return null;
-  return window as unknown as WalletHost;
+/**
+ * EIP-6963 is the reliable path: wagmi's injected connector asks for announcements and exposes
+ * one named connector per wallet, so a browser with Binance Wallet and MetaMask produces
+ * "Binance Wallet" and "MetaMask" without any help from us.
+ *
+ * Registering those wallets a second time from `window.ethereum` produced duplicate entries
+ * ("Binance Wallet" twice), and older extensions that never announce still work through the
+ * generic connector — it binds to whatever owns `window.ethereum`. So the config ships one
+ * connector and lets discovery do the naming.
+ */
+export function walletConnectors(): CreateConnectorFn[] {
+  return [injected()];
 }
 
-export function walletConnectors(): CreateConnectorFn[] {
-  const detected = detectWallets(injectedHost());
-
-  // wagmi types `provider` as viem's fully featured Provider, while an injected wallet is only
-  // guaranteed to implement `request`. They are compatible at runtime, so the cast stays here.
-  const connectors: CreateConnectorFn[] = detected.map((wallet) =>
-    injected({
-      target: {
-        id: wallet.id,
-        name: wallet.name,
-        provider: wallet.provider as unknown as never,
-      },
-    }),
+/**
+ * Collapses connectors that present the same wallet name, which happens when a wallet both
+ * announces itself and answers on `window.ethereum`. Order is preserved.
+ */
+export function uniqueConnectorsByName<T extends { name: string }>(connectors: readonly T[]): T[] {
+  const seen = new Set<string>();
+  const unique: T[] = [];
+  for (const connector of connectors) {
+    const key = connector.name.trim().toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    unique.push(connector);
+  }
+  // A visitor should see the wallets that named themselves before the anonymous fallback.
+  return unique.sort(
+    (left, right) => injectedRank(left.name) - injectedRank(right.name),
   );
+}
 
-  // Fallback for EIP-6963 announcements and anything else injected; also the only connector
-  // when nothing at all is detected.
-  connectors.push(injected());
-
-  return connectors;
+function injectedRank(name: string) {
+  return name.trim().toLowerCase() === "injected" ? 1 : 0;
 }
 
 /**
