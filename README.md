@@ -1,6 +1,6 @@
 # AgentMint Garden
 
-AgentMint Garden is a BNB Smart Chain NFT learning project built with Foundry and OpenZeppelin Contracts. The first version focuses on a small, auditable minting policy and deterministic onchain metadata.
+AgentMint Garden is a BNB Smart Chain NFT learning project built with Foundry and OpenZeppelin Contracts. The first version focuses on a small, auditable minting policy and deterministic onchain metadata. It is deployed on BNB Smart Chain Testnet (chain ID `97`); see [Deployment](#deployment).
 
 ## Mint policy
 
@@ -8,7 +8,8 @@ AgentMint Garden is a BNB Smart Chain NFT learning project built with Foundry an
 - maximum supply: 2,000 NFTs
 - token IDs 1–1,000: free mint
 - token IDs 1,001–2,000: fixed-price mint
-- maximum 2 NFTs per wallet across the full collection
+- maximum 2 mints per wallet, enforced at mint time; the cap does not limit how many
+  NFTs a wallet may hold later through transfers or secondary purchases
 - exact payment is required; the contract does not retain accidental overpayment
 - owner may pause minting and withdraw proceeds
 - metadata and SVG image are generated onchain
@@ -28,6 +29,35 @@ Development targets BNB Smart Chain Testnet:
 
 tBNB has no monetary value. Never send mainnet BNB to a testnet address or faucet.
 
+## Deployment
+
+Deployed to BSC Testnet on 2026-11-03. The machine-readable record lives in
+[`deployments/bsc-testnet.json`](deployments/bsc-testnet.json); the values below mirror it.
+
+| Field | Value |
+|---|---|
+| Contract | `AgentMintGarden` at [`0x5bEd1F9d23FaFdE1A4b81215a2888812494d4107`](https://testnet.bscscan.com/address/0x5bEd1F9d23FaFdE1A4b81215a2888812494d4107) |
+| Chain ID | `97` (BNB Smart Chain Testnet) |
+| Deploy transaction | [`0x00c6d9a46e52a0d26943dcb744a19e60497cfda5fa31d74b17132aa4731b69c0`](https://testnet.bscscan.com/tx/0x00c6d9a46e52a0d26943dcb744a19e60497cfda5fa31d74b17132aa4731b69c0) |
+| Block | `140503064`, mined 2026-11-03T03:39:54Z (11:39:54 +08:00) |
+| Deployer | `0xF040275C3e38Cb018C491BC8a5A5437D86178A67` |
+| `initialOwner` | `0xF040275C3e38Cb018C491BC8a5A5437D86178A67` |
+| `paidMintPrice` | `1000000000000000` wei (0.001 tBNB) |
+| Gas used | `1,839,538` of `2,319,131` limit at 0.132 gwei |
+| Fee paid | `0.000242819016` tBNB |
+| Compiler | solc `0.8.26`, optimizer on, 200 runs, `evmVersion` cancun, `viaIR` false |
+| Runtime bytecode | `7,685` bytes, keccak256 `0xdbcb2b24fb8983a10a1a546f215df3a7909abbca52e49dec126251154156a105` |
+| Source commit | `8f881e5` on `main`, working tree clean |
+| Source verification | pending |
+
+At deployment `totalSupply()` was `0` and `paused()` was `false`, so the collection is
+currently open for minting.
+
+The runtime bytecode was reconciled against a local `forge build` of commit `8f881e5`: both
+artifacts are 7,685 bytes and differ in exactly 18 bytes, all of them the `mintPrice`
+immutable value. Patching those bytes into the local artifact reproduces the on-chain
+keccak256 exactly, so the deployed code is the code in this repository.
+
 ## Development
 
 Requirements: Foundry 1.8 or newer.
@@ -44,9 +74,12 @@ Inspect the public ABI:
 forge inspect AgentMintGarden abi
 ```
 
-## Deployment preparation
+## Deploying
 
-Copy the ignored environment file and configure the owner and paid-phase price in wei:
+The collection is already live on BSC Testnet and the parameters of that deployment are
+recorded in [Deployment](#deployment). To simulate, or to send a fresh deployment from a
+different account, copy the ignored environment file and set the owner and the paid-phase
+price in wei:
 
 ```bash
 cp .env.example .env
@@ -57,12 +90,18 @@ forge script script/DeployAgentMintGarden.s.sol:DeployAgentMintGarden \
   --sender "$NFT_OWNER"
 ```
 
-The command above is a simulation only. Broadcasting and source verification will be added after local tests and a funded BSC Testnet deployment account are ready.
+Without `--broadcast` the command only simulates. Add `--broadcast` to send the transaction:
+`NFT_OWNER` becomes the contract owner and must be funded on chain `97`, and
+`PAID_MINT_PRICE` is the paid-phase price in wei.
+
+The deployment recorded in [`deployments/bsc-testnet.json`](deployments/bsc-testnet.json) was
+broadcast on 2026-11-03 and is confirmed on chain. Source verification on BscScan remains
+outstanding.
 
 ## Roadmap
 
 1. Contract policy and boundary tests
-2. BSC Testnet deployment and BscScan verification
+2. BSC Testnet deployment (done 2026-11-03) and BscScan verification (pending)
 3. Responsive mint/gallery DApp
 4. Metadata trait selection
 5. Binance Wallet connection testing

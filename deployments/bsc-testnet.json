@@ -1,0 +1,80 @@
+{
+  "network": "bsc-testnet",
+  "networkName": "BNB Smart Chain Testnet",
+  "chainId": 97,
+  "nativeCurrency": "tBNB",
+  "contractName": "AgentMintGarden",
+  "address": "0x5bEd1F9d23FaFdE1A4b81215a2888812494d4107",
+  "transactionHash": "0x00c6d9a46e52a0d26943dcb744a19e60497cfda5fa31d74b17132aa4731b69c0",
+  "blockNumber": 140503064,
+  "blockTimestamp": "2026-11-03T03:39:54Z",
+  "blockTimestampLocal": "2026-11-03 11:39:54 +08:00",
+  "deployer": "0xF040275C3e38Cb018C491BC8a5A5437D86178A67",
+  "constructorArgs": {
+    "initialOwner": "0xF040275C3e38Cb018C491BC8a5A5437D86178A67",
+    "paidMintPrice": "1000000000000000"
+  },
+  "constructorArgsHex": "0x000000000000000000000000f040275c3e38cb018c491bc8a5a5437d86178a6700000000000000000000000000000000000000000000000000038d7ea4c68000",
+  "policy": {
+    "name": "AgentMint Garden",
+    "symbol": "GARDEN",
+    "maxSupply": 2000,
+    "freeSupply": 1000,
+    "maxMintsPerWallet": 2,
+    "maxMintsScope": "enforced at mint time; does not cap later holdings",
+    "paidMintPriceWei": "1000000000000000",
+    "paidMintPriceTbnb": "0.001"
+  },
+  "compiler": {
+    "solcVersion": "0.8.26",
+    "optimizer": true,
+    "optimizerRuns": 200,
+    "evmVersion": "cancun",
+    "viaIR": false,
+    "bytecodeHash": "ipfs",
+    "remappings": [
+      "@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/",
+      "forge-std/=lib/forge-std/src/"
+    ]
+  },
+  "bytecode": {
+    "initcodeSizeBytes": 8451,
+    "runtimeSizeBytes": 7685,
+    "runtimeKeccak256": "0xdbcb2b24fb8983a10a1a546f215df3a7909abbca52e49dec126251154156a105",
+    "runtimeSizeLimitBytes": 24576,
+    "runtimeSizeMarginBytes": 16891
+  },
+  "deployment": {
+    "nonce": 0,
+    "value": "0",
+    "status": "success",
+    "gasUsed": 1839538,
+    "gasLimit": 2319131,
+    "gasPriceWei": 132000000,
+    "gasPriceGwei": "0.132",
+    "feeWei": "242819016000000",
+    "feeTbnb": "0.000242819016",
+    "logs": 1
+  },
+  "initialState": {
+    "totalSupply": 0,
+    "paused": false,
+    "owner": "0xF040275C3e38Cb018C491BC8a5A5437D86178A67"
+  },
+  "source": {
+    "repository": "https://github.com/abnsatime/agentmint-garden",
+    "branch": "main",
+    "commit": "8f881e5987190045cf48dccf9ceaf00529426768",
+    "commitShort": "8f881e5",
+    "workingTreeClean": true
+  },
+  "explorer": {
+    "address": "https://testnet.bscscan.com/address/0x5bEd1F9d23FaFdE1A4b81215a2888812494d4107",
+    "transaction": "https://testnet.bscscan.com/tx/0x00c6d9a46e52a0d26943dcb744a19e60497cfda5fa31d74b17132aa4731b69c0"
+  },
+  "verification": {
+    "provider": "bscscan",
+    "status": "pending",
+    "notes": "Source not yet verified. Runtime bytecode reconciled against a local forge build of commit 8f881e5: the only byte differences are the mintPrice immutable value (18 bytes), and patching them into the local artifact reproduces the on-chain keccak256 exactly."
+  }
+}
