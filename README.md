@@ -48,15 +48,16 @@ Deployed to BSC Testnet on 2026-11-03. The machine-readable record lives in
 | Compiler | solc `0.8.26`, optimizer on, 200 runs, `evmVersion` cancun, `viaIR` false |
 | Runtime bytecode | `7,685` bytes, keccak256 `0xdbcb2b24fb8983a10a1a546f215df3a7909abbca52e49dec126251154156a105` |
 | Source commit | `8f881e5` on `main`, working tree clean |
-| Source verification | pending |
+| Source verification | [`Pass - Verified`](https://testnet.bscscan.com/address/0x5bEd1F9d23FaFdE1A4b81215a2888812494d4107#code) on 2026-11-03 (exact match) |
 
 At deployment `totalSupply()` was `0` and `paused()` was `false`, so the collection is
 currently open for minting.
 
-The runtime bytecode was reconciled against a local `forge build` of commit `8f881e5`: both
-artifacts are 7,685 bytes and differ in exactly 18 bytes, all of them the `mintPrice`
-immutable value. Patching those bytes into the local artifact reproduces the on-chain
-keccak256 exactly, so the deployed code is the code in this repository.
+BscScan reports `Pass - Verified`, an exact bytecode match against the submitted source,
+optimizer settings and constructor arguments. The same conclusion follows independently
+from a local `forge build` of commit `8f881e5`: both artifacts are 7,685 bytes and differ
+in exactly 18 bytes, all of them the `mintPrice` immutable value, and patching those bytes
+into the local artifact reproduces the on-chain keccak256 exactly.
 
 ## Development
 
@@ -95,13 +96,12 @@ Without `--broadcast` the command only simulates. Add `--broadcast` to send the 
 `PAID_MINT_PRICE` is the paid-phase price in wei.
 
 The deployment recorded in [`deployments/bsc-testnet.json`](deployments/bsc-testnet.json) was
-broadcast on 2026-11-03 and is confirmed on chain. Source verification on BscScan remains
-outstanding.
+broadcast on 2026-11-03, is confirmed on chain, and its source is verified on BscScan.
 
 ## Roadmap
 
 1. Contract policy and boundary tests
-2. BSC Testnet deployment (done 2026-11-03) and BscScan verification (pending)
+2. BSC Testnet deployment and BscScan verification (done 2026-11-03)
 3. Responsive mint/gallery DApp
 4. Metadata trait selection
 5. Binance Wallet connection testing
