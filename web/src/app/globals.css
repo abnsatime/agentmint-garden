@@ -223,6 +223,25 @@ button:disabled {
   box-shadow: none;
 }
 
+.wallet-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.wallet-hint {
+  margin: 0;
+  color: var(--faint);
+  font: 600 10px/1.4 ui-monospace, monospace;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.connector-disconnect {
+  color: var(--orange) !important;
+}
+
 .wallet-error {
   max-width: 260px;
   margin: 0;
