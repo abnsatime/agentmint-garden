@@ -124,7 +124,7 @@ contract's requirement, previews the artwork of the next token with the same hue
 1. Contract policy and boundary tests
 2. BSC Testnet deployment and BscScan verification (done 2026-11-03)
 3. Responsive mint DApp (done 2026-11-03)
-4. Gallery view of minted tokens
+4. Gallery view of minted tokens (done 2026-11-03)
 5. Metadata trait selection
 6. Binance Wallet connection testing
 7. Agentic Wallet mainnet adapter only after BSC Testnet validation

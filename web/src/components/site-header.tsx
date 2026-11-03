@@ -10,6 +10,12 @@ export function SiteHeader() {
           AgentMint Garden <span className="brand-muted">/ GARDEN</span>
         </span>
       </Link>
+
+      <nav className="nav-links" aria-label="Sections">
+        <Link href="/mint">Mint</Link>
+        <Link href="/gallery">Gallery</Link>
+      </nav>
+
       <div className="header-right">
         <span className="network-chip">
           <span className="dot" />
