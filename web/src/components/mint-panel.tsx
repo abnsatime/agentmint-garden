@@ -29,16 +29,7 @@ import {
   type ParsedTransfer,
 } from "@/lib/mint";
 import { useGarden } from "@/lib/use-garden";
-import { shouldAskForWallet } from "@/lib/wallets";
-
-function friendlyConnectError(error: Error) {
-  const message = error.message;
-  if (/provider not found|no provider|provider is not/i.test(message)) {
-    return "No wallet extension was detected. Install Binance Wallet or MetaMask, then reload this page.";
-  }
-  if (/rejected|denied|4001/i.test(message)) return "You closed the wallet request.";
-  return message.split("\n")[0];
-}
+import { describeConnectError, shouldAskForWallet } from "@/lib/wallets";
 
 export function MintPanel() {
   const { address, isConnected } = useAccount();
@@ -260,7 +251,7 @@ export function MintPanel() {
         <div aria-live="polite" className="mint-status">
           {errorText && <p className="status status-error">{errorText}</p>}
           {!errorText && connectError && (
-            <p className="status status-error">{friendlyConnectError(connectError)}</p>
+            <p className="status status-error">{describeConnectError(connectError)}</p>
           )}
           {reverted && !errorText && (
             <p className="status status-error">

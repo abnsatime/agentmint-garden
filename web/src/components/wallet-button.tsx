@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useAccount, useConnect, useDisconnect } from "wagmi";
 import { shortAddress } from "@/lib/format";
-import { shouldAskForWallet } from "@/lib/wallets";
+import { describeConnectError, shouldAskForWallet } from "@/lib/wallets";
 import { useWalletChain } from "@/lib/use-wallet-chain";
 
 export function WalletButton() {
@@ -119,7 +119,7 @@ export function WalletButton() {
       </button>
 
       {picker}
-      {error && <p className="wallet-error">{error.message.split("\n")[0]}</p>}
+      {error && <p className="wallet-error">{describeConnectError(error)}</p>}
     </div>
   );
 }
