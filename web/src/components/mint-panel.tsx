@@ -29,18 +29,22 @@ import {
   type ParsedTransfer,
 } from "@/lib/mint";
 import { useGarden } from "@/lib/use-garden";
-import { describeConnectError, shouldAskForWallet } from "@/lib/wallets";
+import { useWalletAvailability } from "@/lib/use-wallet-availability";
+import { describeConnectError, shouldAskForWallet, uniqueConnectorsByName } from "@/lib/wallets";
 
 export function MintPanel() {
   const { address, isConnected } = useAccount();
   const { supply, price, policy, paused, mintedBy, balance, refetchAll } = useGarden();
   const { chainId: walletChainId, switchToTestnet } = useWalletChain();
+  const walletAvailable = useWalletAvailability();
   const config = useConfig();
 
   const [requestedQuantity, setRequestedQuantity] = useState(1);
   const [problem, setProblem] = useState<string | null>(null);
   const [showWallets, setShowWallets] = useState(false);
-  const { connectors, connect, isPending: isConnecting, error: connectError } = useConnect();
+  const { connectors: discovered, connect, isPending: isConnecting, error: connectError } =
+    useConnect();
+  const connectors = uniqueConnectorsByName(discovered);
 
   const {
     writeContractAsync,
@@ -80,6 +84,7 @@ export function MintPanel() {
     price,
     quantity,
     balance,
+    walletAvailable: walletAvailable ?? undefined,
   });
   const copy = BLOCKER_COPY[blocker];
   // A wrong network and a missing connection are both things the button itself can fix,

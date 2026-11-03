@@ -56,6 +56,7 @@ export function maxQuantity(supply: bigint, mintedBy: bigint, policy: GardenPoli
 export type MintBlocker =
   | "none"
   | "connect"
+  | "no-wallet"
   | "network"
   | "paused"
   | "sold-out"
@@ -75,6 +76,8 @@ export interface GateInput {
   quantity: number;
   balance?: bigint;
   pending?: boolean;
+  /** False only when the page is certain no wallet is injected; unknown leaves it undefined. */
+  walletAvailable?: boolean;
 }
 
 /**
@@ -82,6 +85,7 @@ export interface GateInput {
  * the first blocking condition is the one worth telling the user about.
  */
 export function mintBlocker(input: GateInput): MintBlocker {
+  if (!input.isConnected && input.walletAvailable === false) return "no-wallet";
   if (!input.isConnected) return "connect";
   if (input.chainId !== undefined && input.chainId !== input.expectedChainId) return "network";
   if (input.paused) return "paused";
@@ -103,6 +107,11 @@ export const BLOCKER_COPY: Record<MintBlocker, { label: string; detail: string }
   connect: {
     label: "Connect a wallet",
     detail: "Pick the wallet that will own the NFT. Nothing is signed until you approve it.",
+  },
+  "no-wallet": {
+    label: "No wallet detected",
+    detail:
+      "This browser is not exposing a wallet extension to the page. Install Binance Wallet or MetaMask, allow it on this site, leave private browsing, then reload.",
   },
   network: {
     label: "Switch to BSC Testnet",

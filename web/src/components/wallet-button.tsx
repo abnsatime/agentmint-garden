@@ -3,14 +3,17 @@
 import { useState } from "react";
 import { useAccount, useConnect, useDisconnect } from "wagmi";
 import { shortAddress } from "@/lib/format";
-import { describeConnectError, shouldAskForWallet } from "@/lib/wallets";
+import { describeConnectError, shouldAskForWallet, uniqueConnectorsByName } from "@/lib/wallets";
 import { useWalletChain } from "@/lib/use-wallet-chain";
+import { useWalletAvailability } from "@/lib/use-wallet-availability";
 
 export function WalletButton() {
   const { address, isConnected, connector } = useAccount();
-  const { connectors, connect, isPending, error } = useConnect();
+  const { connectors: discovered, connect, isPending, error } = useConnect();
+  const connectors = uniqueConnectorsByName(discovered);
   const { disconnect } = useDisconnect();
   const { chainId, isOnTestnet, switchToTestnet, busy, error: switchError } = useWalletChain();
+  const walletAvailable = useWalletAvailability();
   const [picking, setPicking] = useState(false);
 
   const walletName = connector?.name ?? "Wallet";
@@ -98,7 +101,20 @@ export function WalletButton() {
     );
   }
 
-  const hasWallet = connectors.length > 0;
+  const hasWallet = connectors.length > 0 && walletAvailable !== false;
+
+  if (walletAvailable === false) {
+    return (
+      <div className="wallet-connect">
+        <button className="button" disabled type="button">
+          No wallet detected
+        </button>
+        <p className="wallet-hint">
+          enable Binance Wallet or MetaMask for this site, then reload
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="wallet-connect">
