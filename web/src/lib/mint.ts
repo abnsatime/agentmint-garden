@@ -57,6 +57,8 @@ export type MintBlocker =
   | "none"
   | "connect"
   | "no-wallet"
+  | "rpc"
+  | "loading"
   | "network"
   | "paused"
   | "sold-out"
@@ -78,6 +80,10 @@ export interface GateInput {
   pending?: boolean;
   /** False only when the page is certain no wallet is injected; unknown leaves it undefined. */
   walletAvailable?: boolean;
+  /** True when a contract read failed, so price and supply cannot be trusted. */
+  rpcError?: boolean;
+  /** True before the first successful read, when price and supply are still unknown. */
+  readPending?: boolean;
 }
 
 /**
@@ -88,6 +94,9 @@ export function mintBlocker(input: GateInput): MintBlocker {
   if (!input.isConnected && input.walletAvailable === false) return "no-wallet";
   if (!input.isConnected) return "connect";
   if (input.chainId !== undefined && input.chainId !== input.expectedChainId) return "network";
+  // Everything below depends on reads that have not landed yet or just failed.
+  if (input.rpcError) return "rpc";
+  if (input.readPending) return "loading";
   if (input.paused) return "paused";
   if (remainingSupply(input.supply, input.policy.maxSupply) === 0n) return "sold-out";
   if (maxQuantity(input.supply, input.mintedBy, input.policy) === 0n) return "wallet-limit";
@@ -112,6 +121,15 @@ export const BLOCKER_COPY: Record<MintBlocker, { label: string; detail: string }
     label: "No wallet detected",
     detail:
       "This browser is not exposing a wallet extension to the page. Install Binance Wallet or MetaMask, allow it on this site, leave private browsing, then reload.",
+  },
+  rpc: {
+    label: "Contract unreachable",
+    detail:
+      "The read endpoint is not answering, so price and supply cannot be trusted right now. Retry in a moment.",
+  },
+  loading: {
+    label: "Reading the contract…",
+    detail: "Price and supply are still loading from the chain. The button unlocks as soon as they arrive.",
   },
   network: {
     label: "Switch to BSC Testnet",
@@ -150,6 +168,16 @@ export function readyLabel({ supply, quantity, price, freeSupply }: ReadyLabelIn
   if (paid === 0n) return `Claim ${quantity} free`;
   if (free === 0n) return `Mint ${quantity} for ${formatTbnb(paid * price)} tBNB`;
   return `Claim ${free} free + mint ${paid} for ${formatTbnb(paid * price)} tBNB`;
+}
+
+/**
+ * Estimated network fee for a transaction. Returns null rather than a misleading zero when
+ * either figure is missing.
+ */
+export function formatGasFee(gas?: bigint, gasPrice?: bigint): string | null {
+  if (gas === undefined || gasPrice === undefined) return null;
+  if (gas <= 0n || gasPrice <= 0n) return null;
+  return formatTbnb(gas * gasPrice);
 }
 
 export function formatTbnb(value: bigint) {

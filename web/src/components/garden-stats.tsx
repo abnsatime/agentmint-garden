@@ -10,7 +10,7 @@ function percent(part: bigint, whole: bigint) {
 }
 
 export function GardenStats() {
-  const { supply, price, policy, mintedBy, isLoading } = useGarden();
+  const { supply, price, policy, mintedBy, isLoading, status, error, refetchAll } = useGarden();
   const { isConnected } = useAccount();
 
   const freeLeft = freeSupplyRemaining(supply, policy.freeSupply);
@@ -20,6 +20,14 @@ export function GardenStats() {
 
   return (
     <section className="stats" aria-label="Collection status">
+      {status === "error" && (
+        <p className="stats-error" role="status">
+          Live figures unavailable{error ? `: ${error.replace(/\.$/, "")}` : ""}.{" "}
+          <button className="retry-link" onClick={() => refetchAll()} type="button">
+            Retry
+          </button>
+        </p>
+      )}
       <div className="stats-grid">
         <article className="stat">
           <p className="stat-label">Minted</p>
