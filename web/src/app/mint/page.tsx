@@ -4,6 +4,7 @@ import { GardenStats } from "@/components/garden-stats";
 import { MintPanel } from "@/components/mint-panel";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
+import { WalletInspector } from "@/components/wallet-inspector";
 
 export const metadata: Metadata = {
   title: "Mint — AgentMint Garden",
@@ -22,6 +23,7 @@ export default function MintPage() {
 
         <GardenStats />
         <MintPanel />
+        <WalletInspector />
       </main>
 
       <SiteFooter diagnostics />
