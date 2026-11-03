@@ -1,5 +1,5 @@
 ﻿import { describe, expect, it } from "vitest";
-import { describeConnectError, detectWallets, shouldAskForWallet } from "./wallets";
+import { describeConnectError, detectWallets, shouldAskForWallet, uniqueConnectorsByName } from "./wallets";
 
 function provider(flags: Record<string, boolean> = {}) {
   return { request: async () => null, ...flags };
@@ -116,5 +116,31 @@ describe("connect error copy", () => {
 
   it("falls back for anything else", () => {
     expect(describeConnectError({})).toBe("The wallet connection failed.");
+  });
+});
+
+describe("connector de-duplication", () => {
+  it("keeps one entry per wallet name, preferring the first, named wallets first", () => {
+    const unique = uniqueConnectorsByName([
+      { name: "Binance Wallet", id: "announced" },
+      { name: "Injected", id: "generic" },
+      { name: "Binance Wallet", id: "explicit" },
+      { name: "MetaMask", id: "metamask" },
+    ]);
+    expect(unique.map((entry) => entry.id)).toEqual(["announced", "metamask", "generic"]);
+  });
+
+  it("leaves a lone generic connector last but present", () => {
+    const unique = uniqueConnectorsByName([{ name: "Injected", id: "generic" }]);
+    expect(unique.map((entry) => entry.id)).toEqual(["generic"]);
+  });
+
+  it("ignores case and surrounding spaces", () => {
+    const unique = uniqueConnectorsByName([{ name: "Binance Wallet" }, { name: " binance wallet " }]);
+    expect(unique).toHaveLength(1);
+  });
+
+  it("passes an empty list through", () => {
+    expect(uniqueConnectorsByName([])).toEqual([]);
   });
 });

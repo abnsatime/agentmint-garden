@@ -94,6 +94,19 @@ describe("mint gate", () => {
     expect(mintBlocker(gate({ isConnected: false, paused: true }))).toBe("connect");
   });
 
+  it("reports a missing wallet when the page is sure none is injected", () => {
+    expect(mintBlocker(gate({ isConnected: false, walletAvailable: false }))).toBe("no-wallet");
+  });
+
+  it("treats an unknown wallet state as a normal connect prompt", () => {
+    expect(mintBlocker(gate({ isConnected: false, walletAvailable: undefined }))).toBe("connect");
+    expect(mintBlocker(gate({ isConnected: false, walletAvailable: true }))).toBe("connect");
+  });
+
+  it("ignores the wallet hint once connected", () => {
+    expect(mintBlocker(gate({ walletAvailable: false }))).toBe("none");
+  });
+
   it("asks for a network switch before reporting contract state", () => {
     expect(mintBlocker(gate({ chainId: 56, paused: true }))).toBe("network");
   });
@@ -130,6 +143,7 @@ describe("mint gate", () => {
     for (const blocker of [
       "none",
       "connect",
+      "no-wallet",
       "network",
       "paused",
       "sold-out",
