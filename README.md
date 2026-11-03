@@ -98,14 +98,32 @@ Without `--broadcast` the command only simulates. Add `--broadcast` to send the 
 The deployment recorded in [`deployments/bsc-testnet.json`](deployments/bsc-testnet.json) was
 broadcast on 2026-11-03, is confirmed on chain, and its source is verified on BscScan.
 
+## Frontend
+
+The mint DApp lives in [`web/`](web/README.md): a Next.js 16 static export using wagmi and
+viem, wired to the deployed contract.
+
+```bash
+cd web
+pnpm install
+pnpm dev     # iterate here; forward port 3000 to your browser if you work from Windows
+pnpm build   # static export into web/out
+```
+
+It reads supply, price, wallet allowance and pause state from chain, re-quotes with
+`quoteMintPrice` immediately before signing so the exact payment always matches the
+contract's requirement, previews the artwork of the next token with the same hue rule
+`tokenURI` uses, and renders the real on-chain metadata once a mint confirms.
+
 ## Roadmap
 
 1. Contract policy and boundary tests
 2. BSC Testnet deployment and BscScan verification (done 2026-11-03)
-3. Responsive mint/gallery DApp
-4. Metadata trait selection
-5. Binance Wallet connection testing
-6. Agentic Wallet mainnet adapter only after BSC Testnet validation
+3. Responsive mint DApp (done 2026-11-03)
+4. Gallery view of minted tokens
+5. Metadata trait selection
+6. Binance Wallet connection testing
+7. Agentic Wallet mainnet adapter only after BSC Testnet validation
 
 Binance Agentic Wallet is deliberately deferred because its current BSC integration targets mainnet chain ID 56 rather than BSC Testnet chain ID 97.
 
