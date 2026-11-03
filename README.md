@@ -110,6 +110,10 @@ pnpm dev     # iterate here; forward port 3000 to your browser if you work from 
 pnpm build   # static export into web/out
 ```
 
+Two routes are exported: `/` is a landing page and `/mint` is the mint flow. Pushes to `main`
+publish the export to GitHub Pages at
+<https://abnsatime.github.io/agentmint-garden/> (`/mint` for the mint page).
+
 It reads supply, price, wallet allowance and pause state from chain, re-quotes with
 `quoteMintPrice` immediately before signing so the exact payment always matches the
 contract's requirement, previews the artwork of the next token with the same hue rule

@@ -1,28 +1,14 @@
+import Link from "next/link";
 import { GardenStats } from "@/components/garden-stats";
-import { MintPanel } from "@/components/mint-panel";
 import { PolicySection } from "@/components/policy-section";
-import { WalletButton } from "@/components/wallet-button";
-import { WalletDiagnostics } from "@/components/wallet-diagnostics";
+import { SiteFooter } from "@/components/site-footer";
+import { SiteHeader } from "@/components/site-header";
 import { contractExplorerUrl } from "@/lib/contracts";
 
-export default function Page() {
+export default function HomePage() {
   return (
     <div className="shell">
-      <header className="site-header">
-        <a className="brand" href="#top">
-          <span className="brand-mark">A</span>
-          <span className="brand-text">
-            AgentMint Garden <span className="brand-muted">/ GARDEN</span>
-          </span>
-        </a>
-        <div className="header-right">
-          <span className="network-chip">
-            <span className="dot" />
-            BSC Testnet · 97
-          </span>
-          <WalletButton />
-        </div>
-      </header>
+      <SiteHeader />
 
       <main id="top">
         <section className="hero">
@@ -38,9 +24,9 @@ export default function Page() {
               are free, two per wallet, and every leaf is drawn by the contract itself.
             </p>
             <div className="hero-actions">
-              <a className="button button-primary" href="#mint">
-                Mint an NFT
-              </a>
+              <Link className="button button-primary" href="/mint">
+                Mint an NFT →
+              </Link>
               <a
                 className="button button-ghost"
                 href={contractExplorerUrl}
@@ -66,17 +52,22 @@ export default function Page() {
         </section>
 
         <GardenStats />
-        <MintPanel />
+
+        <section className="route-callout">
+          <p>
+            <strong>Ready to plant?</strong>
+            The mint page reads the live price, checks your wallet allowance and shows the
+            artwork of the token you are about to mint.
+          </p>
+          <Link className="button button-primary" href="/mint">
+            Go to mint →
+          </Link>
+        </section>
+
         <PolicySection />
       </main>
 
-      <footer className="site-footer">
-        <span>AgentMint Garden · an educational testnet project, not audited</span>
-        <a href={contractExplorerUrl} rel="noreferrer" target="_blank">
-          Contract on BscScan ↗
-        </a>
-        <WalletDiagnostics />
-      </footer>
+      <SiteFooter />
     </div>
   );
 }

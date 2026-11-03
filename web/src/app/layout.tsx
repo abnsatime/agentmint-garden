@@ -3,7 +3,7 @@ import "./globals.css";
 import { Providers } from "./providers";
 
 export const metadata: Metadata = {
-  title: "AgentMint Garden — mint on BNB Smart Chain Testnet",
+  title: "AgentMint Garden — 2,000 onchain NFT gardens on BNB Smart Chain Testnet",
   description:
     "2,000 onchain gardens on BNB Smart Chain Testnet. The first 1,000 are free, two per wallet, artwork generated onchain.",
 };

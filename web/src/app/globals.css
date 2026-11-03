@@ -881,6 +881,55 @@ button:disabled {
   letter-spacing: 0.14em;
 }
 
+/* ---------- route chrome ---------- */
+
+.crumbs {
+  margin: 6px 0 20px;
+  color: var(--faint);
+  font: 700 10px/1 ui-monospace, monospace;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.crumbs a {
+  border-bottom: 1px solid transparent;
+}
+
+.crumbs a:hover {
+  border-color: currentColor;
+  color: var(--lime);
+}
+
+.route-callout {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+  margin-top: 42px;
+  padding: 26px 28px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: linear-gradient(105deg, rgba(173, 255, 122, 0.1), rgba(16, 32, 27, 0.55));
+}
+
+.route-callout p {
+  margin: 0;
+  max-width: 60ch;
+  color: #b6c6bf;
+  font-size: 14px;
+}
+
+.route-callout strong {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--white);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 22px;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+}
+
 /* ---------- responsive ---------- */
 
 @media (max-width: 980px) {

@@ -36,12 +36,18 @@ environment file.
 ## Structure
 
 ```
-src/app/            layout, providers, page, globals.css (design tokens)
+src/app/page.tsx    landing page: hero, live stats, policy, call to action
+src/app/mint/       the mint route: stats, quantity stepper, artwork preview, transaction states
+src/app/            layout, providers, globals.css (design tokens)
 src/lib/contracts   address, ABI subset, explorer links
 src/lib/mint        pure logic: pricing mirror, gate states, error decoding, art preview
 src/lib/use-garden  one hook that owns every contract read
-src/components/     wallet button, stats, mint panel, art preview, policy section
+src/lib/use-wallet-chain  wallet network truth, switch and add-chain fallback
+src/components/     header, footer, wallet button, stats, mint panel, art preview, policy
 ```
+
+Routes are exported statically: `/` is the landing page and `/mint` is the mint flow, so the
+mint surface can be linked, shared and monitored on its own.
 
 `src/lib/mint.ts` mirrors the on-chain pricing rule and the on-chain SVG generator, which is
 what makes it testable without a node: the unit tests assert the same boundaries the Solidity
