@@ -22,6 +22,7 @@ const runner = new SyncRunner({
 const app = buildServer({
   health: () => collectHealth(db, config, startedAt),
   status: () => runner.status(),
+  api: { db },
   logLevel: config.logLevel,
 });
 

@@ -3,8 +3,8 @@
 A small service that reads the garden and market contracts once, stores the events in
 PostgreSQL, and lets the frontend ask questions instead of scanning logs in the browser.
 
-**Status: sync loop. No read API yet**, and the frontend still scans logs itself. This commit
-adds the scanner, the per-window commit, the `--once` CLI and `/sync/status`.
+**Status: sync loop and read API.** The frontend still scans logs itself; switching the three
+routes over is the next step.
 
 ## Why
 
@@ -39,6 +39,32 @@ run the migrations by hand.
 |---|---|---|
 | `GET` | `/health` | `200` when the database answers and cursors are readable, `503` otherwise |
 | `GET` | `/sync/status` | cursors, per-stream lag, and the last error of *this process* |
+| `GET` | `/tokens` | every indexed token, newest first; `owner`, `limit`, `cursor` |
+| `GET` | `/tokens/:tokenId` | one token: mint, transfer history, live listing |
+| `GET` | `/market/listings` | the live order book, cheapest first; `limit`, `cursor` |
+| `GET` | `/market/sales` | recent sales, newest first; `limit`, `cursor` |
+| `GET` | `/activity` | one wallet's transfers in and out; `owner` (required), `limit`, `cursor` |
+
+### Read API
+
+Everything is derived from the event tables, so a wrong projection is a query fix rather than a
+re-sync:
+
+- a token's owner is its newest `Transfer`
+- a listing is the newest market event for that token, and it only counts as live while the
+  seller still owns the token — a seller who moved it away is filtered out, which is what the
+  contract would reject
+
+Every list is keyset paginated and returns `{ items, next }`; `next` is the cursor for the
+following page, or `null` at the end. Numbers that can exceed a JavaScript integer are decimal
+strings, and timestamps are ISO-8601 UTC. A bad parameter is a `400` that names it:
+
+```json
+{ "error": "limit must be a positive integer, got \"zero\"", "parameter": "limit" }
+```
+
+Addresses are accepted in any case and normalised, since callers paste them from logs and
+explorers in whatever case they were copied.
 
 `headBlock`, `lastRunAt` and the lags in `/sync/status` describe the server process's own runs,
 so they are `null` until that process syncs. The cursors themselves are shared through the
@@ -119,6 +145,10 @@ src/sync/writer.ts     one transaction: rows plus cursor
 src/sync/streams.ts    the two stream definitions
 src/sync/runner.ts     the sync loop
 src/sync/status.ts     status payload (pure)
+src/api/params.ts      query parsing, 400s on bad input
+src/api/present.ts     row to JSON (bigint as string, timestamps as ISO)
+src/api/repository.ts  the read queries
+src/api/routes.ts      the five endpoints
 src/server/health.ts   health payload assembly and probe
 src/server/app.ts      Fastify factory (dependencies injected)
 src/cli/sync.ts        `pnpm sync`
