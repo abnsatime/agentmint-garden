@@ -14,6 +14,8 @@ import {
   type MintEvent,
 } from "./gallery";
 import { bscTestnetRpcUrl } from "./wagmi";
+import { fetchTokens, indexerEnabled } from "./indexer";
+import { toGalleryItem, toGalleryMint } from "./indexer-map";
 
 /** publicnode allows a 50k block span; the app's default endpoint allows far less. */
 const LOG_RPC_URL = "https://bsc-testnet-rpc.publicnode.com";
@@ -23,6 +25,8 @@ const readClient = createPublicClient({ chain: bscTestnet, transport: http(bscTe
 const logClient = createPublicClient({ chain: bscTestnet, transport: http(LOG_RPC_URL) });
 
 const GARDEN_MINTED_TOPIC = toEventSelector("GardenMinted(address,uint256,bool,uint256)");
+
+export type GallerySource = "index" | "chain";
 
 export interface GalleryItem {
   tokenId: number;
@@ -46,6 +50,8 @@ export interface GalleryState {
   mints: Record<number, GalleryMintEvent>;
   mintsStatus: "loading" | "ready" | "unavailable";
   hasNext: boolean;
+  /** Where this page came from; "chain" means the index was unavailable. */
+  source: GallerySource;
   nextPage: () => void;
   previousPage: () => void;
   refresh: () => void;
@@ -71,6 +77,8 @@ function describe(error: unknown) {
 
 /** Reads token metadata and ownership for one page, newest token first. */
 export function useGallery(pageSize = 24): GalleryState {
+  // The index is tried first when configured; a failure switches this session to the chain path.
+  const [source, setSource] = useState<GallerySource>(indexerEnabled ? "index" : "chain");
   const [page, setPage] = useState(1);
   const [nonce, setNonce] = useState(0);
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
@@ -79,9 +87,13 @@ export function useGallery(pageSize = 24): GalleryState {
   const [items, setItems] = useState<GalleryItem[]>([]);
   const [mints, setMints] = useState<Record<number, GalleryMintEvent>>({});
   const [mintsStatus, setMintsStatus] = useState<"loading" | "ready" | "unavailable">("loading");
+  // cursors[n] is the cursor that loads page n + 1; cursors[0] is always null.
+  const [cursors, setCursors] = useState<Array<string | null>>([null]);
+  const [indexNext, setIndexNext] = useState<string | null>(null);
 
-  // Collection size.
+  // Collection size for the chain path; the index reports its own count.
   useEffect(() => {
+    if (source !== "chain") return;
     let cancelled = false;
     (async () => {
       try {
@@ -92,7 +104,7 @@ export function useGallery(pageSize = 24): GalleryState {
         });
         if (!cancelled) setSupply(Number(total));
       } catch (readError) {
-        if (!cancelled) {
+        if (!cancelled && source === "chain") {
           setError(describe(readError));
           setStatus("error");
         }
@@ -101,11 +113,59 @@ export function useGallery(pageSize = 24): GalleryState {
     return () => {
       cancelled = true;
     };
-  }, [nonce]);
+  }, [nonce, source]);
 
-  // Page of tokens.
+  // Index path: one request per page, artwork included.
   useEffect(() => {
-    if (supply === null) return;
+    if (source !== "index") return;
+    let cancelled = false;
+
+    (async () => {
+      setStatus("loading");
+      try {
+        const cursor = cursors[page - 1] ?? null;
+        const result = await fetchTokens({ limit: pageSize, cursor });
+
+        if (cancelled) return;
+
+        setItems(result.items.map(toGalleryItem));
+        setIndexNext(result.next);
+        // The index knows the size, so this path never touches the chain.
+        if (typeof result.total === "number") setSupply(result.total);
+
+        const provenance: Record<number, GalleryMintEvent> = {};
+        for (const token of result.items) {
+          const mint = toGalleryMint(token);
+          if (mint) provenance[mint.tokenId] = mint;
+        }
+        setMints(provenance);
+        setMintsStatus("ready");
+        setStatus("ready");
+        setError(null);
+
+        if (result.next) {
+          setCursors((current) => {
+            const copy = [...current];
+            copy[page] = result.next;
+            return copy;
+          });
+        }
+      } catch (readError) {
+        if (cancelled) return;
+        // Falling back is better than an empty gallery; the chain path is already written.
+        console.warn("[gallery] index unavailable, falling back to logs:", readError);
+        setSource("chain");
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [source, page, pageSize, nonce, cursors]);
+
+  // Chain path: a page of tokens read one by one.
+  useEffect(() => {
+    if (source !== "chain" || supply === null) return;
     let cancelled = false;
 
     (async () => {
@@ -159,12 +219,12 @@ export function useGallery(pageSize = 24): GalleryState {
     return () => {
       cancelled = true;
     };
-  }, [supply, page, pageSize, nonce]);
+  }, [source, supply, page, pageSize, nonce]);
 
-  // Mint provenance from GardenMinted logs. Best effort: a node that refuses logs only
-  // costs the "minted by / when" line, never the artwork.
+  // Chain path mint provenance. Best effort: a node that refuses logs only costs the
+  // "minted by / when" line, never the artwork.
   useEffect(() => {
-    if (supply === null || supply === 0) return;
+    if (source !== "chain" || supply === null || supply === 0) return;
     let cancelled = false;
 
     (async () => {
@@ -229,13 +289,25 @@ export function useGallery(pageSize = 24): GalleryState {
     return () => {
       cancelled = true;
     };
-  }, [supply, nonce]);
+  }, [source, supply, nonce]);
 
-  const nextPage = useCallback(() => setPage((current) => current + 1), []);
+  const hasNext =
+    source === "index"
+      ? indexNext !== null
+      : supply !== null && page * pageSize < supply;
+
+  const nextPage = useCallback(() => {
+    if (!hasNext) return;
+    setPage((current) => current + 1);
+  }, [hasNext]);
+
   const previousPage = useCallback(() => setPage((current) => Math.max(1, current - 1)), []);
+
   const refresh = useCallback(() => {
     setMints({});
     setMintsStatus("loading");
+    setCursors([null]);
+    setIndexNext(null);
     setNonce((value) => value + 1);
   }, []);
 
@@ -248,7 +320,8 @@ export function useGallery(pageSize = 24): GalleryState {
     items,
     mints,
     mintsStatus,
-    hasNext: supply !== null && page * pageSize < supply,
+    hasNext,
+    source,
     nextPage,
     previousPage,
     refresh,

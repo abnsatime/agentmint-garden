@@ -47,6 +47,9 @@ jobs:
 
       - name: Export static site
         working-directory: web
+        env:
+          # Repository variable; when it is empty the export keeps its on-chain fallback.
+          NEXT_PUBLIC_INDEXER_URL: ${{ vars.INDEXER_URL }}
         run: pnpm build
 
       - name: Disable Jekyll processing
