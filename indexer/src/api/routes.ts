@@ -9,7 +9,14 @@ import {
   parseTokenCursor,
   parseTokenId,
 } from "./params.js";
-import { getToken, listActivity, listListings, listSales, listTokens } from "./repository.js";
+import {
+  countTokens,
+  getToken,
+  listActivity,
+  listListings,
+  listSales,
+  listTokens,
+} from "./repository.js";
 
 type Handler = (request: FastifyRequest, reply: FastifyReply) => Promise<unknown>;
 
@@ -45,9 +52,12 @@ export function registerApi(app: FastifyInstance, db: Database): void {
       const owner = parseAddress(params.owner);
       const before = parseTokenCursor(params.cursor);
 
-      const items = await listTokens(db, { owner, limit, before });
+      const [items, total] = await Promise.all([
+        listTokens(db, { owner, limit, before }),
+        countTokens(db),
+      ]);
       const last = items[items.length - 1];
-      return { items, next: items.length === limit && last ? last.tokenId : null };
+      return { items, total, next: items.length === limit && last ? last.tokenId : null };
     }),
   );
 

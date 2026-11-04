@@ -16,6 +16,7 @@ export interface TokenSummary {
   mintedAt: string | null;
   freeMint: boolean | null;
   pricePaidWei: string | null;
+  mintedTxHash: string | null;
   metadata: TokenMetadataView | null;
 }
 
@@ -65,6 +66,9 @@ export interface ActivityView {
   logIndex: number;
   txHash: string;
   blockTime: string;
+  /** Set only for mints, so the activity list can show free/paid without another call. */
+  freeMint: boolean | null;
+  pricePaidWei: string | null;
 }
 
 export interface TokenDetail {
@@ -89,6 +93,7 @@ export interface TokenRow {
   price_paid_wei: string | null;
   mint_block: string | null;
   mint_time: string | null;
+  mint_tx: string | null;
   meta_name: string | null;
   meta_image: string | null;
   meta_traits: Array<{ trait_type: string; value: string }> | null;
@@ -111,6 +116,7 @@ export function toTokenSummary(row: TokenRow): TokenSummary {
     mintedAt: row.mint_time === null ? null : iso(row.mint_time),
     freeMint: row.free_mint,
     pricePaidWei: row.price_paid_wei,
+    mintedTxHash: row.mint_tx,
     metadata: toMetadataView(row.meta_name, row.meta_image, row.meta_traits),
   };
 }
@@ -203,18 +209,26 @@ export function toSaleView(row: SaleRow): SaleView {
 
 /** `owner` decides the direction, so a mint (from the zero address) reads as an inbound. */
 export function toActivityView(
-  row: TransferRow & { to_address: string; from_address: string },
+  row: TransferRow & {
+    to_address: string;
+    from_address: string;
+    token_id: string;
+    free_mint?: boolean | null;
+    price_paid_wei?: string | null;
+  },
   owner: string,
 ): ActivityView {
   const lower = owner.toLowerCase();
   const inbound = row.to_address.toLowerCase() === lower;
   return {
     direction: inbound ? "in" : "out",
-    tokenId: (row as TransferRow & { token_id: string }).token_id,
+    tokenId: row.token_id,
     counterparty: inbound ? row.from_address : row.to_address,
     blockNumber: row.block_number,
     logIndex: row.log_index,
     txHash: row.tx_hash,
     blockTime: iso(row.block_time),
+    freeMint: row.free_mint ?? null,
+    pricePaidWei: row.price_paid_wei ?? null,
   };
 }

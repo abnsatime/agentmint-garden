@@ -45,6 +45,15 @@ const LATEST_MARKET_EVENT = sql`
   order by token_id, block_number desc, log_index desc
 `;
 
+/** How many tokens exist, independent of any filter. */
+export async function countTokens(db: Database): Promise<number> {
+  const result = await rows<{ total: string }>(
+    db,
+    sql`select count(*)::text as total from (${LATEST_OWNER}) as latest`,
+  );
+  return Number(result[0]?.total ?? 0);
+}
+
 export interface ListTokensParams {
   owner: string | null;
   limit: number;
@@ -65,6 +74,7 @@ export async function listTokens(db: Database, params: ListTokensParams): Promis
              m.free_mint,
              m.price_paid_wei::text as price_paid_wei,
              m.block_number::text as mint_block,
+             m.tx_hash as mint_tx,
              to_char(m.block_time at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as mint_time,
              tm.name as meta_name,
              tm.image as meta_image,
@@ -220,17 +230,27 @@ export async function listActivity(
   const block = params.cursor === null ? null : params.cursor.blockNumber.toString();
   const index = params.cursor === null ? null : params.cursor.logIndex;
 
-  const result = await rows<TransferRow & { token_id: string }>(
+  const result = await rows<
+    TransferRow & {
+      token_id: string;
+      free_mint: boolean | null;
+      price_paid_wei: string | null;
+    }
+  >(
     db,
     sql`
-      select token_id::text as token_id, from_address, to_address,
-             block_number::text as block_number, log_index, tx_hash,
-             to_char(block_time at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as block_time
-      from nft_transfers
-      where (lower(to_address) = lower(${params.owner}) or lower(from_address) = lower(${params.owner}))
+      select t.token_id::text as token_id, t.from_address, t.to_address,
+             t.block_number::text as block_number, t.log_index, t.tx_hash,
+             to_char(t.block_time at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as block_time,
+             m.free_mint, m.price_paid_wei::text as price_paid_wei
+      from nft_transfers t
+      left join garden_mints m
+        on m.token_id = t.token_id
+       and t.from_address = '0x0000000000000000000000000000000000000000'
+      where (lower(t.to_address) = lower(${params.owner}) or lower(t.from_address) = lower(${params.owner}))
         and (${block}::bigint is null
-             or (block_number, log_index) < (${block}::bigint, ${index}::integer))
-      order by block_number desc, log_index desc
+             or (t.block_number, t.log_index) < (${block}::bigint, ${index}::integer))
+      order by t.block_number desc, t.log_index desc
       limit ${params.limit}
     `,
   );
