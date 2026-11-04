@@ -12,7 +12,8 @@
     "db:up": "docker compose up -d postgres",
     "db:down": "docker compose down",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate"
+    "db:migrate": "drizzle-kit migrate",
+    "sync": "tsx src/cli/sync.ts"
   },
   "dependencies": {
     "drizzle-orm": "^0.44.7",

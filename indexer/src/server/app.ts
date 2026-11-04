@@ -1,14 +1,21 @@
 import Fastify, { type FastifyInstance } from "fastify";
 import type { HealthPayload } from "./health.js";
+import type { SyncStatus } from "../sync/status.js";
 
 export interface ServerDeps {
   /** Injected so the route can be tested without a database. */
   health: () => Promise<HealthPayload>;
+  /** Omitted by callers that only serve health; the route is then not registered. */
+  status?: () => Promise<SyncStatus>;
   logLevel?: string;
 }
 
+function messageOf(error: unknown): string {
+  return ((error as Error)?.message ?? "health check failed").split("\n")[0] ?? "";
+}
+
 function degraded(error: unknown): HealthPayload {
-  const message = ((error as Error)?.message ?? "health check failed").split("\n")[0] ?? "";
+  const message = messageOf(error);
   const now = Date.now();
   return {
     status: "degraded",
@@ -35,6 +42,18 @@ export function buildServer(deps: ServerDeps): FastifyInstance {
       return degraded(error);
     }
   });
+
+  if (deps.status) {
+    const readStatus = deps.status;
+    app.get("/sync/status", async (_request, reply) => {
+      try {
+        return await readStatus();
+      } catch (error) {
+        reply.code(503);
+        return { error: messageOf(error) };
+      }
+    });
+  }
 
   return app;
 }

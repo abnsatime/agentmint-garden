@@ -1,5 +1,5 @@
 import { and, eq, sql } from "drizzle-orm";
-import type { Database } from "../db/client.js";
+import type { DbClient } from "../db/client.js";
 import { syncCursors } from "../db/schema.js";
 import { shouldAdvance } from "./ranges.js";
 
@@ -21,7 +21,7 @@ export interface Cursor {
   updatedAt: Date;
 }
 
-export async function readCursor(db: Database, key: CursorKey): Promise<Cursor | null> {
+export async function readCursor(db: DbClient, key: CursorKey): Promise<Cursor | null> {
   const rows = await db
     .select()
     .from(syncCursors)
@@ -43,7 +43,7 @@ export async function readCursor(db: Database, key: CursorKey): Promise<Cursor |
  * retried batch can never rewind the stream.
  */
 export async function advanceCursor(
-  db: Database,
+  db: DbClient,
   key: CursorKey,
   lastBlock: bigint,
 ): Promise<Cursor> {
@@ -75,7 +75,7 @@ export async function advanceCursor(
   };
 }
 
-export async function listCursors(db: Database, chainId?: number): Promise<Cursor[]> {
+export async function listCursors(db: DbClient, chainId?: number): Promise<Cursor[]> {
   const rows = await (chainId === undefined
     ? db.select().from(syncCursors)
     : db.select().from(syncCursors).where(eq(syncCursors.chainId, chainId)));

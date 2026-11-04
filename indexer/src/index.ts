@@ -1,8 +1,10 @@
+import { createChainReader } from "./chain/reader.js";
 import { createDb } from "./db/client.js";
-import { loadDotEnv } from "./env-file.js";
 import { loadConfig } from "./env.js";
+import { loadDotEnv } from "./env-file.js";
 import { buildServer } from "./server/app.js";
 import { collectHealth } from "./server/health.js";
+import { SyncRunner } from "./sync/runner.js";
 
 // A .env fills whatever the environment did not provide; explicit variables win.
 const fromFile = loadDotEnv(".env");
@@ -11,8 +13,15 @@ const startedAt = Date.now();
 const config = loadConfig();
 const { db, pool } = createDb(config.databaseUrl);
 
+const runner = new SyncRunner({
+  db,
+  reader: createChainReader(config.rpcUrl),
+  config,
+});
+
 const app = buildServer({
   health: () => collectHealth(db, config, startedAt),
+  status: () => runner.status(),
   logLevel: config.logLevel,
 });
 
