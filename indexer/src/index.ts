@@ -23,6 +23,7 @@ const app = buildServer({
   health: () => collectHealth(db, config, startedAt),
   status: () => runner.status(),
   api: { db },
+  corsOrigins: config.corsOrigins,
   logLevel: config.logLevel,
 });
 

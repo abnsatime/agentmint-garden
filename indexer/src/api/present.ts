@@ -3,6 +3,12 @@
  * string, and every timestamp as ISO-8601, so the payload is plain JSON.
  */
 
+export interface TokenMetadataView {
+  name: string;
+  image: string | null;
+  traits: Array<{ trait_type: string; value: string }>;
+}
+
 export interface TokenSummary {
   tokenId: string;
   owner: string;
@@ -10,6 +16,7 @@ export interface TokenSummary {
   mintedAt: string | null;
   freeMint: boolean | null;
   pricePaidWei: string | null;
+  metadata: TokenMetadataView | null;
 }
 
 export interface TransferView {
@@ -36,6 +43,7 @@ export interface ListingView {
   priceWei: string;
   sinceBlock: string;
   sinceTime: string | null;
+  metadata: TokenMetadataView | null;
 }
 
 export interface SaleView {
@@ -62,6 +70,7 @@ export interface ActivityView {
 export interface TokenDetail {
   tokenId: string;
   owner: string;
+  metadata: TokenMetadataView | null;
   mint: MintView | null;
   transfers: TransferView[];
   listing: { seller: string; priceWei: string; sinceBlock: string; live: boolean } | null;
@@ -80,6 +89,18 @@ export interface TokenRow {
   price_paid_wei: string | null;
   mint_block: string | null;
   mint_time: string | null;
+  meta_name: string | null;
+  meta_image: string | null;
+  meta_traits: Array<{ trait_type: string; value: string }> | null;
+}
+
+export function toMetadataView(
+  name: string | null | undefined,
+  image: string | null | undefined,
+  traits: Array<{ trait_type: string; value: string }> | null | undefined,
+): TokenMetadataView | null {
+  if (!name) return null;
+  return { name, image: image ?? null, traits: traits ?? [] };
 }
 
 export function toTokenSummary(row: TokenRow): TokenSummary {
@@ -90,6 +111,7 @@ export function toTokenSummary(row: TokenRow): TokenSummary {
     mintedAt: row.mint_time === null ? null : iso(row.mint_time),
     freeMint: row.free_mint,
     pricePaidWei: row.price_paid_wei,
+    metadata: toMetadataView(row.meta_name, row.meta_image, row.meta_traits),
   };
 }
 
@@ -139,6 +161,9 @@ export interface ListingRow {
   price_wei: string;
   block_number: string;
   block_time: string | null;
+  meta_name?: string | null;
+  meta_image?: string | null;
+  meta_traits?: Array<{ trait_type: string; value: string }> | null;
 }
 
 export function toListingView(row: ListingRow): ListingView {
@@ -148,6 +173,7 @@ export function toListingView(row: ListingRow): ListingView {
     priceWei: row.price_wei,
     sinceBlock: row.block_number,
     sinceTime: row.block_time === null ? null : iso(row.block_time),
+    metadata: toMetadataView(row.meta_name, row.meta_image, row.meta_traits),
   };
 }
 

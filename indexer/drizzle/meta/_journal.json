@@ -8,6 +8,13 @@
       "when": 1793779104632,
       "tag": "0000_wild_power_man",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1793782886333,
+      "tag": "0001_groovy_ogun",
+      "breakpoints": true
     }
   ]
 }

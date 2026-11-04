@@ -7,6 +7,7 @@ import {
   toMintView,
   toSaleView,
   toTokenSummary,
+  toMetadataView,
   toTransferView,
   type ActivityView,
   type ListingView,
@@ -64,9 +65,13 @@ export async function listTokens(db: Database, params: ListTokensParams): Promis
              m.free_mint,
              m.price_paid_wei::text as price_paid_wei,
              m.block_number::text as mint_block,
-             to_char(m.block_time at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as mint_time
+             to_char(m.block_time at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as mint_time,
+             tm.name as meta_name,
+             tm.image as meta_image,
+             tm.traits as meta_traits
       from latest
       left join garden_mints m on m.token_id = latest.token_id
+      left join token_metadata tm on tm.token_id = latest.token_id
       where (${owner}::text is null or lower(latest.to_address) = lower(${owner}))
         and (${before}::bigint is null or latest.token_id < ${before}::bigint)
       order by latest.token_id desc
@@ -104,8 +109,15 @@ export async function getToken(db: Database, tokenId: bigint): Promise<TokenDeta
         from garden_mints where token_id = ${id}::bigint`,
   );
 
+  const metaRows = await rows<{
+    name: string;
+    image: string | null;
+    traits: Array<{ trait_type: string; value: string }> | null;
+  }>(db, sql`select name, image, traits from token_metadata where token_id = ${id}::bigint`);
+
   const owner = ownerRows[0]?.owner;
   const mint = mintRows[0];
+  const meta = metaRows[0];
 
   if (!owner && !mint) return null;
 
@@ -131,6 +143,7 @@ export async function getToken(db: Database, tokenId: bigint): Promise<TokenDeta
   return {
     tokenId: id,
     owner: owner ?? "",
+    metadata: toMetadataView(meta?.name, meta?.image, meta?.traits),
     mint: mint ? toMintView(mint) : null,
     transfers: transferRows.map(toTransferView),
     listing:
@@ -163,6 +176,9 @@ export async function listListings(
     price_wei: string;
     block_number: string;
     block_time: string | null;
+    meta_name: string | null;
+    meta_image: string | null;
+    meta_traits: Array<{ trait_type: string; value: string }> | null;
   }>(
     db,
     sql`
@@ -172,9 +188,13 @@ export async function listListings(
              e.seller,
              e.price_wei::text as price_wei,
              e.block_number::text as block_number,
-             to_char(e.block_time at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as block_time
+             to_char(e.block_time at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as block_time,
+             tm.name as meta_name,
+             tm.image as meta_image,
+             tm.traits as meta_traits
       from latest_event e
       join latest_owner o on o.token_id = e.token_id
+      left join token_metadata tm on tm.token_id = e.token_id
       where e.kind in ('listed', 'price_updated')
         and o.to_address = e.seller
         and (${price}::numeric is null

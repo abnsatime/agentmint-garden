@@ -8,6 +8,7 @@ export interface Config {
   chainId: number;
   rpcUrl: string;
   logWindowBlocks: bigint;
+  corsOrigins: string[];
   garden: { address: Address; deployBlock: bigint };
   market: { address: Address; deployBlock: bigint };
 }
@@ -53,6 +54,10 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     chainId: count(env, "CHAIN_ID", 97),
     rpcUrl: env.RPC_URL?.trim() || "https://bsc-testnet-rpc.publicnode.com",
     logWindowBlocks: BigInt(count(env, "LOG_WINDOW_BLOCKS", 45_000)),
+    corsOrigins: (env.CORS_ORIGINS?.trim() || "https://abnsatime.github.io,http://localhost:3000")
+      .split(",")
+      .map((origin) => origin.trim())
+      .filter(Boolean),
     garden: {
       address: address(env, "GARDEN_ADDRESS"),
       deployBlock: bigCount(env, "GARDEN_DEPLOY_BLOCK"),

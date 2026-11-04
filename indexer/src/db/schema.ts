@@ -3,6 +3,7 @@ import {
   boolean,
   index,
   integer,
+  jsonb,
   numeric,
   pgTable,
   serial,
@@ -92,6 +93,18 @@ export const marketEvents = pgTable(
     index("market_events_kind_idx").on(table.kind),
   ],
 );
+
+/**
+ * Decoded `tokenURI`: the artwork and traits, read once here so no browser has to.
+ * A token without a row simply has not been backfilled yet.
+ */
+export const tokenMetadata = pgTable("token_metadata", {
+  tokenId: bigint("token_id", { mode: "bigint" }).primaryKey(),
+  name: text("name").notNull(),
+  image: text("image"),
+  traits: jsonb("traits").$type<Array<{ trait_type: string; value: string }>>().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
 
 export type SyncCursorRow = typeof syncCursors.$inferSelect;
 export type GardenMintRow = typeof gardenMints.$inferInsert;

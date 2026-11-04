@@ -15,7 +15,18 @@ export interface ChainReader {
     toBlock: bigint;
   }): Promise<RawLog[]>;
   timestamp(blockNumber: bigint): Promise<bigint>;
+  tokenUri(address: Address, tokenId: bigint): Promise<string>;
 }
+
+const TOKEN_URI_ABI = [
+  {
+    type: "function",
+    name: "tokenURI",
+    stateMutability: "view",
+    inputs: [{ name: "tokenId", type: "uint256" }],
+    outputs: [{ name: "", type: "string" }],
+  },
+] as const;
 
 export interface ViemReader extends ChainReader {
   client: PublicClient;
@@ -48,5 +59,13 @@ export function createChainReader(rpcUrl: string, options: { timeoutMs?: number 
     },
 
     timestamp: async (blockNumber) => (await client.getBlock({ blockNumber })).timestamp,
+
+    tokenUri: (address, tokenId) =>
+      client.readContract({
+        address,
+        abi: TOKEN_URI_ABI,
+        functionName: "tokenURI",
+        args: [tokenId],
+      }),
   };
 }
