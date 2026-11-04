@@ -150,6 +150,22 @@ buyer that does not implement `onERC721Received` gets a reverted purchase instea
 custody of a token it could never move. The deployed contract at the address above still uses
 `transferFrom`; re-deploy to pick the hardening up.
 
+## Indexer
+
+[`indexer/`](indexer/README.md) is the service that will replace the browser-side log scans
+behind `/gallery`, `/me` and `/market`: Node.js, Fastify, PostgreSQL and Drizzle ORM, with
+Docker Compose for the database.
+
+It is a foundation for now — schema, sync cursor and `/health`. No sync loop, no read API, and
+the frontend still scans logs itself.
+
+```bash
+cd indexer
+pnpm install && cp .env.example .env
+pnpm db:up && pnpm db:migrate
+pnpm dev        # http://127.0.0.1:8081/health
+```
+
 ## Roadmap
 
 1. Contract policy and boundary tests
