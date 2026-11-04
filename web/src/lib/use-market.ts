@@ -15,6 +15,10 @@ import {
   type MarketEvent,
 } from "./market";
 import { MARKET_DEPLOYMENT_BLOCK, marketAddress } from "./market-contracts";
+import { fetchListings, indexerEnabled } from "./indexer";
+import { toMarketItem } from "./indexer-map";
+
+export type MarketSource = "index" | "chain";
 
 export interface MarketItem extends Listing {
   name: string;
@@ -27,6 +31,7 @@ export interface MarketState {
   error: string | null;
   items: MarketItem[];
   staleCount: number;
+  source: MarketSource;
   refresh: () => void;
 }
 
@@ -35,17 +40,47 @@ function describe(error: unknown) {
 }
 
 /**
- * Rebuilds the order book from market events, then drops listings whose seller no longer owns
- * the token (the contract rejects those, so showing them would only invite failed purchases).
+ * Rebuilds the order book and drops listings whose seller no longer owns the token. The index
+ * already does both, so it is asked first; the log replay stays as the fallback.
  */
 export function useMarket(pageSize = 48): MarketState {
+  const [source, setSource] = useState<MarketSource>(indexerEnabled ? "index" : "chain");
   const [status, setStatus] = useState<MarketState["status"]>("loading");
   const [error, setError] = useState<string | null>(null);
   const [items, setItems] = useState<MarketItem[]>([]);
   const [staleCount, setStaleCount] = useState(0);
   const [nonce, setNonce] = useState(0);
 
+  // Index path.
   useEffect(() => {
+    if (source !== "index") return;
+    let cancelled = false;
+
+    (async () => {
+      setStatus("loading");
+      setError(null);
+      try {
+        const result = await fetchListings({ limit: pageSize });
+        if (cancelled) return;
+        setItems(result.items.map(toMarketItem));
+        // The server filters listings whose seller moved the token away.
+        setStaleCount(0);
+        setStatus("ready");
+      } catch (readError) {
+        if (cancelled) return;
+        console.warn("[market] index unavailable, falling back to logs:", readError);
+        setSource("chain");
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [source, pageSize, nonce]);
+
+  // Chain path.
+  useEffect(() => {
+    if (source !== "chain") return;
     let cancelled = false;
 
     (async () => {
@@ -110,9 +145,9 @@ export function useMarket(pageSize = 48): MarketState {
     return () => {
       cancelled = true;
     };
-  }, [pageSize, nonce]);
+  }, [source, pageSize, nonce]);
 
   const refresh = useCallback(() => setNonce((value) => value + 1), []);
 
-  return { status, error, items, staleCount, refresh };
+  return { status, error, items, staleCount, source, refresh };
 }

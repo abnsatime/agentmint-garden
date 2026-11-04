@@ -23,6 +23,10 @@ import {
   type Holding,
 } from "./my-garden";
 import { decodeTokenUri } from "./mint";
+import { fetchActivity, fetchTokens, indexerEnabled } from "./indexer";
+import { toActivityItem, toHoldings } from "./indexer-map";
+
+export type GardenSource = "index" | "chain";
 
 export interface MyToken extends Holding {
   name: string;
@@ -39,6 +43,7 @@ export interface MyGarden {
   mintsUsed: number;
   maxPerWallet: number;
   counts: { mints: number; inbound: number; outbound: number };
+  source: GardenSource;
   refresh: () => void;
 }
 
@@ -50,6 +55,7 @@ const EMPTY: Omit<MyGarden, "refresh"> = {
   mintsUsed: 0,
   maxPerWallet: 0,
   counts: { mints: 0, inbound: 0, outbound: 0 },
+  source: indexerEnabled ? "index" : "chain",
 };
 
 function topicFor(address: string): Hex {
@@ -62,20 +68,86 @@ function describe(error: unknown) {
 
 /**
  * Everything about one wallet: what it holds now, how it got there, and what the tokens look
- * like. Ownership is reconstructed from Transfer events because the contract is not
- * enumerable, and the reads are address-filtered so the log scan stays cheap.
+ * like. The index answers all three in two requests; without it the log scan below reconstructs
+ * the same thing from Transfer events, because the contract is not enumerable.
  */
 export function useMyGarden(): MyGarden {
   const { address } = useAccount();
   const [state, setState] = useState<Omit<MyGarden, "refresh">>(EMPTY);
   const [nonce, setNonce] = useState(0);
 
+  const source = state.source;
+
   useEffect(() => {
     if (!address) {
       setState(EMPTY);
-      return;
     }
+  }, [address]);
 
+  // Index path.
+  useEffect(() => {
+    if (!address || source !== "index") return;
+    let cancelled = false;
+
+    (async () => {
+      setState((current) => ({ ...current, status: "loading", error: null }));
+      try {
+        const [activityPage, tokenPage, mintedBy, maxPerWallet] = await Promise.all([
+          fetchActivity({ owner: address, limit: 200 }),
+          fetchTokens({ owner: address, limit: 100 }),
+          stateClient.readContract({
+            address: gardenAddress,
+            abi: agentMintGardenAbi,
+            functionName: "mintedBy",
+            args: [address],
+          }),
+          stateClient.readContract({
+            address: gardenAddress,
+            abi: agentMintGardenAbi,
+            functionName: "MAX_PER_WALLET",
+          }),
+        ]);
+
+        const activity = activityPage.items.map(toActivityItem);
+        const art = new Map(tokenPage.items.map((token) => [Number(token.tokenId), token]));
+        const holdings: MyToken[] = toHoldings(tokenPage.items, activityPage.items).map(
+          (holding) => {
+            const metadata = art.get(holding.tokenId)?.metadata ?? null;
+            return {
+              ...holding,
+              name: metadata?.name ?? `GARDEN #${holding.tokenId}`,
+              image: metadata?.image ?? undefined,
+              traits: metadata?.traits ?? [],
+            };
+          },
+        );
+
+        if (cancelled) return;
+        setState({
+          status: "ready",
+          error: null,
+          holdings,
+          activity,
+          mintsUsed: Number(mintedBy),
+          maxPerWallet: Number(maxPerWallet),
+          counts: summarise(activity),
+          source: "index",
+        });
+      } catch (readError) {
+        if (cancelled) return;
+        console.warn("[me] index unavailable, falling back to logs:", readError);
+        setState((current) => ({ ...current, source: "chain" }));
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [address, source, nonce]);
+
+  // Chain path.
+  useEffect(() => {
+    if (!address || source !== "chain") return;
     let cancelled = false;
 
     (async () => {
@@ -172,6 +244,7 @@ export function useMyGarden(): MyGarden {
             mintsUsed: Number(mintedBy),
             maxPerWallet: Number(maxPerWallet),
             counts: summarise(activity),
+            source: "chain",
           });
         }
       } catch (readError) {
@@ -188,7 +261,7 @@ export function useMyGarden(): MyGarden {
     return () => {
       cancelled = true;
     };
-  }, [address, nonce]);
+  }, [address, source, nonce]);
 
   const refresh = useCallback(() => setNonce((value) => value + 1), []);
 

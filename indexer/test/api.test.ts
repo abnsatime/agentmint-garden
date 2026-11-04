@@ -153,6 +153,11 @@ describeDb("read api", () => {
       expect(items.find((item) => item.tokenId === "5")?.owner).toBe(OWNER);
     });
 
+    it("reports the collection size", async () => {
+      const { body } = await get("/tokens?limit=2");
+      expect(body.total).toBe(5);
+    });
+
     it("includes the mint", async () => {
       const { body } = await get("/tokens?limit=1");
       const items = body.items as Array<Record<string, unknown>>;

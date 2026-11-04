@@ -23,6 +23,7 @@ describe("token summary", () => {
         price_paid_wei: "0",
         mint_block: "140686449",
         mint_time: AT.toISOString(),
+        mint_tx: "0x27eb5d9b1f1a769898456d2b97fc5c11eccd8b486daf2fafcc6dab5b4cfcf3a4",
         meta_name: null,
         meta_image: null,
         meta_traits: null,
@@ -34,6 +35,7 @@ describe("token summary", () => {
       mintedAt: AT.toISOString(),
       freeMint: true,
       pricePaidWei: "0",
+      mintedTxHash: "0x27eb5d9b1f1a769898456d2b97fc5c11eccd8b486daf2fafcc6dab5b4cfcf3a4",
       metadata: null,
     });
   });
@@ -47,6 +49,7 @@ describe("token summary", () => {
       price_paid_wei: null,
       mint_block: null,
       mint_time: null,
+      mint_tx: null,
       meta_name: null,
       meta_image: null,
       meta_traits: null,
@@ -56,6 +59,7 @@ describe("token summary", () => {
     expect(summary.mintedAt).toBeNull();
     expect(summary.freeMint).toBeNull();
     expect(summary.metadata).toBeNull();
+    expect(summary.mintedTxHash).toBeNull();
   });
 });
 
