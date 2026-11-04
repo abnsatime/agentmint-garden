@@ -1,7 +1,13 @@
 import { migrate } from "drizzle-orm/node-postgres/migrator";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { createDb } from "../src/db/client.js";
-import { gardenMints, marketEvents, nftTransfers, syncCursors } from "../src/db/schema.js";
+import {
+  gardenMints,
+  marketEvents,
+  nftTransfers,
+  syncCursors,
+  tokenMetadata,
+} from "../src/db/schema.js";
 import { buildServer } from "../src/server/app.js";
 import { commitWindow } from "../src/sync/writer.js";
 
@@ -66,6 +72,7 @@ describeDb("read api", () => {
       throw new Error("not used in these tests");
     },
     api: { db },
+    corsOrigins: ["https://abnsatime.github.io"],
     logLevel: "silent",
   });
 
@@ -77,6 +84,7 @@ describeDb("read api", () => {
     await db.delete(gardenMints);
     await db.delete(nftTransfers);
     await db.delete(marketEvents);
+    await db.delete(tokenMetadata);
     await db.delete(syncCursors);
 
     // Tokens 1-5 minted by OWNER; 1 sold to OTHER, 2 moved to OTHER, 4 and 5 still listed.
@@ -120,6 +128,7 @@ describeDb("read api", () => {
   });
 
   afterAll(async () => {
+    await db.delete(tokenMetadata);
     await db.delete(gardenMints);
     await db.delete(nftTransfers);
     await db.delete(marketEvents);
@@ -177,6 +186,39 @@ describeDb("read api", () => {
     it("rejects a bad owner", async () => {
       const { status } = await get("/tokens?owner=0x1234");
       expect(status).toBe(400);
+    });
+
+    it("includes artwork once the metadata has been read", async () => {
+      await db.insert(tokenMetadata).values({
+        tokenId: 5n,
+        name: "AgentMint Garden #5",
+        image: "data:image/svg+xml;base64,AAA",
+        traits: [{ trait_type: "hue", value: "186" }],
+      });
+
+      const { body } = await get("/tokens?limit=1");
+      const items = body.items as Array<Record<string, unknown>>;
+      expect(items[0]?.metadata).toEqual({
+        name: "AgentMint Garden #5",
+        image: "data:image/svg+xml;base64,AAA",
+        traits: [{ trait_type: "hue", value: "186" }],
+      });
+    });
+
+    it("allows the configured site origin to read the api", async () => {
+      const allowed = await app.inject({
+        method: "GET",
+        url: "/tokens",
+        headers: { origin: "https://abnsatime.github.io" },
+      });
+      expect(allowed.headers["access-control-allow-origin"]).toBe("https://abnsatime.github.io");
+
+      const other = await app.inject({
+        method: "GET",
+        url: "/tokens",
+        headers: { origin: "https://evil.example" },
+      });
+      expect(other.headers["access-control-allow-origin"]).toBeUndefined();
     });
   });
 

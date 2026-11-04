@@ -7,6 +7,7 @@ import { nextWindow, resumeBlock } from "./ranges.js";
 import { countPending } from "./rows.js";
 import { buildSyncStatus, type SyncStatus } from "./status.js";
 import { streamsFor, type StreamSpec } from "./streams.js";
+import { syncTokenMetadata, type MetadataReport } from "./metadata.js";
 import { resolveTimestamps, timestampLookup } from "./timestamps.js";
 import { commitWindow } from "./writer.js";
 
@@ -20,9 +21,12 @@ export interface StreamReport {
   more: boolean;
 }
 
+export interface MetadataReportSummary extends MetadataReport {}
+
 export interface SyncReport {
   headBlock: bigint;
   streams: StreamReport[];
+  metadata: MetadataReport;
   durationMs: number;
 }
 
@@ -33,6 +37,8 @@ export interface RunnerOptions {
   streams?: StreamSpec[];
   /** Bounds one run so a cold start cannot scan the whole chain in a single pass. */
   maxWindowsPerStream?: number;
+  /** How many missing token URIs to read per run. */
+  maxMetadataPerRun?: number;
   onProgress?: (message: string) => void;
 }
 
@@ -56,6 +62,8 @@ export class SyncRunner {
   private readonly streams: StreamSpec[];
   private readonly logWindow: bigint;
   private readonly maxWindowsPerStream: number;
+  private readonly maxMetadataPerRun: number;
+  private readonly gardenAddress: `0x${string}`;
   private readonly onProgress?: (message: string) => void;
   private readonly timestamps = new Map<bigint, Date>();
 
@@ -71,6 +79,8 @@ export class SyncRunner {
     this.streams = options.streams ?? streamsFor(options.config);
     this.logWindow = options.config.logWindowBlocks;
     this.maxWindowsPerStream = options.maxWindowsPerStream ?? 200;
+    this.maxMetadataPerRun = options.maxMetadataPerRun ?? 50;
+    this.gardenAddress = options.config.garden.address;
     this.onProgress = options.onProgress;
   }
 
@@ -83,11 +93,22 @@ export class SyncRunner {
     try {
       const head = await this.reader.head();
       this.headBlock = head;
-      const report: SyncReport = { headBlock: head, streams: [], durationMs: 0 };
+      const report: SyncReport = {
+        headBlock: head,
+        streams: [],
+        metadata: { attempted: 0, stored: 0, failed: 0 },
+        durationMs: 0,
+      };
 
       for (const spec of this.streams) {
         report.streams.push(await this.syncStream(spec, head));
       }
+
+      // Artwork is filled after the events, so a fresh mint is listed before it is pretty.
+      report.metadata = await syncTokenMetadata(
+        { db: this.db, reader: this.reader, gardenAddress: this.gardenAddress },
+        this.maxMetadataPerRun,
+      );
 
       this.lastRunAt = new Date();
       this.lastError = null;

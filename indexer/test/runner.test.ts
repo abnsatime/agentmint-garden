@@ -70,6 +70,8 @@ function fakeReader(options: { head: bigint; failFor?: string }): FakeReader {
       return [];
     },
     timestamp: async (block) => 1_700_000_000n + block,
+    // Metadata is covered by its own suite; here the URI is simply not available.
+    tokenUri: async () => "",
   };
 }
 

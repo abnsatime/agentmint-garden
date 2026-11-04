@@ -23,6 +23,9 @@ describe("token summary", () => {
         price_paid_wei: "0",
         mint_block: "140686449",
         mint_time: AT.toISOString(),
+        meta_name: null,
+        meta_image: null,
+        meta_traits: null,
       }),
     ).toEqual({
       tokenId: "7",
@@ -31,6 +34,7 @@ describe("token summary", () => {
       mintedAt: AT.toISOString(),
       freeMint: true,
       pricePaidWei: "0",
+      metadata: null,
     });
   });
 
@@ -43,11 +47,15 @@ describe("token summary", () => {
       price_paid_wei: null,
       mint_block: null,
       mint_time: null,
+      meta_name: null,
+      meta_image: null,
+      meta_traits: null,
     });
 
     expect(summary.mintedBy).toBeNull();
     expect(summary.mintedAt).toBeNull();
     expect(summary.freeMint).toBeNull();
+    expect(summary.metadata).toBeNull();
   });
 });
 
@@ -102,6 +110,9 @@ describe("mint, listing and sale", () => {
         price_wei: "1538461538461539",
         block_number: "140692379",
         block_time: AT.toISOString(),
+        meta_name: null,
+        meta_image: null,
+        meta_traits: null,
       }),
     ).toEqual({
       tokenId: "5",
@@ -109,6 +120,7 @@ describe("mint, listing and sale", () => {
       priceWei: "1538461538461539",
       sinceBlock: "140692379",
       sinceTime: AT.toISOString(),
+      metadata: null,
     });
   });
 

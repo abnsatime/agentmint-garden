@@ -11,6 +11,8 @@ export interface ServerDeps {
   status?: () => Promise<SyncStatus>;
   /** Omitted by callers that only serve health; the read endpoints are then not registered. */
   api?: { db: Database };
+  /** Origins allowed to read the API from a browser. Empty or undefined disables CORS. */
+  corsOrigins?: string[];
   logLevel?: string;
 }
 
@@ -34,6 +36,28 @@ function degraded(error: unknown): HealthPayload {
 
 export function buildServer(deps: ServerDeps): FastifyInstance {
   const app = Fastify({ logger: { level: deps.logLevel ?? "info" } });
+
+  const allowed = deps.corsOrigins ?? [];
+  if (allowed.length > 0) {
+    const permitAll = allowed.includes("*");
+    app.addHook("onRequest", async (request, reply) => {
+      const origin = request.headers.origin;
+      if (!origin) return;
+      if (!permitAll && !allowed.includes(origin)) return;
+
+      // The site is a static export on another origin, so every read from a browser is
+      // cross-origin. Only GET is served, which keeps this to a simple request.
+      reply.header("access-control-allow-origin", origin);
+      reply.header("vary", "origin");
+      reply.header("access-control-allow-methods", "GET,OPTIONS");
+      reply.header("access-control-allow-headers", "content-type");
+    });
+
+    app.options("/*", async (_request, reply) => {
+      reply.code(204);
+      return null;
+    });
+  }
 
   app.get("/health", async (_request, reply) => {
     try {
