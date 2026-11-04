@@ -11,8 +11,13 @@ interface IERC721Slim {
     function isApprovedForAll(address owner, address operator) external view returns (bool);
 
     function transferFrom(address from, address to, uint256 tokenId) external;
+
+    function safeTransferFrom(address from, address to, uint256 tokenId) external;
 }
 
+/// @dev The deployment at 0x153bbf8fc8eD31ab8e73d9b5AE3076d73d3424e2 was built before the
+/// safeTransferFrom hardening below: it still uses transferFrom, so a contract buyer without
+/// onERC721Received can take custody of a token there. Re-deploy to pick this up.
 /// @title AgentMint Market
 /// @notice Fixed-price listings for one ERC-721 collection.
 /// @dev Listings are approvals, not escrow: a listed token stays in the seller's wallet until
@@ -108,7 +113,9 @@ contract AgentMintMarket is ReentrancyGuard {
         // rolls the log back too, so this cannot fabricate a sale.
         emit Sold(tokenId, listing.seller, msg.sender, listing.price);
 
-        try collection.transferFrom(listing.seller, msg.sender, tokenId) {}
+        // safeTransferFrom rather than transferFrom: a contract buyer that does not implement
+        // onERC721Received would otherwise take custody of a token it can never move again.
+        try collection.safeTransferFrom(listing.seller, msg.sender, tokenId) {}
         catch {
             revert MarketTransferFailed();
         }
