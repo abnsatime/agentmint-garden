@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { bscTestnet } from "wagmi/chains";
 import { useAccount, useWaitForTransactionReceipt, useWriteContract } from "wagmi";
 import { transactionExplorerUrl, tokenExplorerUrl } from "@/lib/contracts";
@@ -88,7 +89,7 @@ export function MarketGrid() {
         <div className="gallery-empty">
           <p className="gallery-empty-title">No gardens for sale</p>
           <p>
-            Nothing is listed right now. Open <a className="me-link" href="/me">My garden</a> and
+            Nothing is listed right now. Open <Link className="me-link" href="/me">My garden</Link> and
             list one of yours.
           </p>
         </div>
