@@ -32,6 +32,7 @@ environment file.
 | `NEXT_PUBLIC_BSC_TESTNET_RPC_URL` | Read-only JSON-RPC endpoint |
 | `NEXT_PUBLIC_CONTRACT_ADDRESS` | `AgentMintGarden` address |
 | `NEXT_PUBLIC_DEPLOYMENT_BLOCK` | Block the contract was created in |
+| `NEXT_PUBLIC_DEBUG` | `true` shows the footer state line (chain / supply / blocker). Leave unset for public builds |
 
 ## Structure
 
