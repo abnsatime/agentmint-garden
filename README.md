@@ -157,8 +157,9 @@ behind `/gallery`, `/me` and `/market`: Node.js, Fastify, PostgreSQL and Drizzle
 Docker Compose for the database.
 
 It syncs both contracts into raw event tables with a per-stream cursor, commits each block
-window together with its cursor, and serves `/health` and `/sync/status`. There is no read API
-yet, so the frontend still scans logs itself.
+window together with its cursor, and serves a read API — `/tokens`, `/tokens/:id`,
+`/market/listings`, `/market/sales`, `/activity` — plus `/health` and `/sync/status`. The
+frontend still scans logs itself for now.
 
 ```bash
 cd indexer

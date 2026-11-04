@@ -1,4 +1,6 @@
 import Fastify, { type FastifyInstance } from "fastify";
+import type { Database } from "../db/client.js";
+import { registerApi } from "../api/routes.js";
 import type { HealthPayload } from "./health.js";
 import type { SyncStatus } from "../sync/status.js";
 
@@ -7,6 +9,8 @@ export interface ServerDeps {
   health: () => Promise<HealthPayload>;
   /** Omitted by callers that only serve health; the route is then not registered. */
   status?: () => Promise<SyncStatus>;
+  /** Omitted by callers that only serve health; the read endpoints are then not registered. */
+  api?: { db: Database };
   logLevel?: string;
 }
 
@@ -54,6 +58,8 @@ export function buildServer(deps: ServerDeps): FastifyInstance {
       }
     });
   }
+
+  if (deps.api) registerApi(app, deps.api.db);
 
   return app;
 }
