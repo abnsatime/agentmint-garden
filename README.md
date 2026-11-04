@@ -156,13 +156,15 @@ custody of a token it could never move. The deployed contract at the address abo
 behind `/gallery`, `/me` and `/market`: Node.js, Fastify, PostgreSQL and Drizzle ORM, with
 Docker Compose for the database.
 
-It is a foundation for now — schema, sync cursor and `/health`. No sync loop, no read API, and
-the frontend still scans logs itself.
+It syncs both contracts into raw event tables with a per-stream cursor, commits each block
+window together with its cursor, and serves `/health` and `/sync/status`. There is no read API
+yet, so the frontend still scans logs itself.
 
 ```bash
 cd indexer
 pnpm install && cp .env.example .env
 pnpm db:up && pnpm db:migrate
+pnpm sync       # scan the chain once
 pnpm dev        # http://127.0.0.1:8081/health
 ```
 

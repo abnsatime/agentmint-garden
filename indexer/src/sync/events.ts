@@ -177,6 +177,11 @@ export function decodeMarketEvent(log: RawLog): MarketEvent | null {
   return null;
 }
 
+/** The block a log belongs to, in the shape the store writes. */
+export function logBlockNumber(log: RawLog): bigint {
+  return blockOf(log.blockNumber);
+}
+
 /** Topics to OR together for a single market scan. */
 export const MARKET_TOPIC_LIST: Hex[] = [
   MARKET_TOPICS.listed,
