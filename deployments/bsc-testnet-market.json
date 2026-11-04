@@ -57,9 +57,38 @@
     "transaction": "https://testnet.bscscan.com/tx/0xa78471d3a4e2c1d3584d887e2b62253545990eb6a9205869c6d4d78d0be901a4"
   },
   "verification": {
-    "provider": "bscscan",
-    "status": "pending",
-    "guid": "srwjn3p352ukg5m9cg6ae7xwgtg4ketgwrgfbwnrtyzfcg2uyz",
-    "notes": "Submitted twice with the Foundry build and constructor arguments; BscScan's testnet queue kept answering 'Pending in queue' for several minutes. The runtime bytecode reconciles byte-for-byte against a local forge build (120 bytes differ, all inside the immutable collection address, and patching them reproduces the on-chain keccak)."
+    "bscscan": {
+      "status": "verified",
+      "result": "Pass - Verified",
+      "url": "https://testnet.bscscan.com/address/0x153bbf8fc8eD31ab8e73d9b5AE3076d73d3424e2#code",
+      "compilerVersion": "v0.8.26+commit.8a97fa7a",
+      "optimizerRuns": 200,
+      "evmVersion": "cancun",
+      "guid": "srwjn3p352ukg5m9cg6ae7xwgtg4ketgwrgfbwnrtyzfcg2uyz",
+      "notes": "The first submission sat in the queue for hours, then completed; a later poll returned 'Already Verified'."
+    },
+    "sourcify": {
+      "status": "verified",
+      "result": "exact_match",
+      "creationMatch": "exact_match",
+      "runtimeMatch": "exact_match",
+      "matchId": "58337287",
+      "jobId": "9cc15150-9a01-4a85-9761-10fae7557839",
+      "verifiedAt": "2026-11-04T07:36:56Z",
+      "url": "https://sourcify.dev/server/v2/contract/97/0x153bbf8fc8eD31ab8e73d9b5AE3076d73d3424e2",
+      "notes": "Sourcify reports exact_match for both the creation and runtime bytecode."
+    }
+  },
+  "deployedSource": {
+    "commit": "de4e00f",
+    "note": "The deployed bytecode was built from this commit. main now carries a safeTransferFrom hardening that changes the bytecode, so re-verify against this commit if the deployed sources are ever re-submitted."
+  },
+  "pendingHardening": {
+    "status": "in source, not deployed",
+    "change": "buy() uses safeTransferFrom instead of transferFrom",
+    "reason": "A contract buyer without onERC721Received could otherwise take custody of a token it can never move again. With the change such a purchase reverts with MarketTransferFailed.",
+    "tests": [
+      "test/AgentMintMarketSafeBuy.t.sol"
+    ]
   }
 }

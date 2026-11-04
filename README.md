@@ -142,6 +142,14 @@ The record lives in [`deployments/bsc-testnet-market.json`](deployments/bsc-test
 Dollar hints in the UI use a configured rate (`NEXT_PUBLIC_BNB_USD_RATE`); testnet tBNB has no
 value, so they are indicative only.
 
+Source verification: **verified** on BscScan (`Pass - Verified`) and on Sourcify
+(`exact_match` for creation and runtime bytecode).
+
+One change on `main` is **not deployed**: `buy` now uses `safeTransferFrom`, so a contract
+buyer that does not implement `onERC721Received` gets a reverted purchase instead of taking
+custody of a token it could never move. The deployed contract at the address above still uses
+`transferFrom`; re-deploy to pick the hardening up.
+
 ## Roadmap
 
 1. Contract policy and boundary tests
