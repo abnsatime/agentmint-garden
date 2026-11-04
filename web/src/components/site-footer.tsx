@@ -1,5 +1,6 @@
-import { contractExplorerUrl } from "@/lib/contracts";
 import { WalletDiagnostics } from "@/components/wallet-diagnostics";
+import { contractExplorerUrl } from "@/lib/contracts";
+import { showFooterDiagnostics } from "@/lib/flags";
 
 export function SiteFooter({ diagnostics = false }: { diagnostics?: boolean }) {
   return (
@@ -8,7 +9,7 @@ export function SiteFooter({ diagnostics = false }: { diagnostics?: boolean }) {
       <a href={contractExplorerUrl} rel="noreferrer" target="_blank">
         Contract on BscScan ↗
       </a>
-      {diagnostics && <WalletDiagnostics />}
+      {showFooterDiagnostics(diagnostics) && <WalletDiagnostics />}
     </footer>
   );
 }
