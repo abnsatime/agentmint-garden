@@ -1,21 +1,28 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useAccount, useConfig, useReadContract, useWaitForTransactionReceipt, useWriteContract } from "wagmi";
-import { waitForTransactionReceipt } from "wagmi/actions";
+import { useState } from "react";
 import { parseEther } from "viem";
-import { bnbUsdRate, marketAbi, marketAddress } from "@/lib/market-contracts";
+import { bscTestnet } from "wagmi/chains";
+import { useAccount, useConfig, useReadContract, useWriteContract } from "wagmi";
+import { readContract, waitForTransactionReceipt } from "wagmi/actions";
 import { agentMintGardenAbi, gardenAddress } from "@/lib/contracts";
-import { decodeMarketError, describePrice, suggestFloorPrice, tbnbToUsd, formatUsd } from "@/lib/market";
+import { bnbUsdRate, marketAbi, marketAddress } from "@/lib/market-contracts";
+import { decodeMarketError, formatUsd, suggestFloorPrice, tbnbToUsd } from "@/lib/market";
 import { formatTbnb } from "@/lib/mint";
+import { useWalletChain } from "@/lib/use-wallet-chain";
 
 /**
- * Sell controls for one held token: approve the market if needed, then list it. Both
- * transactions are sent from the same handler so the second one cannot race the first.
+ * Sell controls for one held token: approve the market if needed, then list it.
+ *
+ * Both transactions are awaited to their receipts before the button frees up again, so a
+ * second click cannot queue a duplicate list or cancel while the first is still in flight.
  */
 export function SellControls({ tokenId, onChanged }: { tokenId: number; onChanged?: () => void }) {
   const { address } = useAccount();
   const config = useConfig();
+  const { chainId, isOnTestnet, switchToTestnet, busy: switching, error: switchError } =
+    useWalletChain();
+
   const [price, setPrice] = useState(() => formatTbnb(suggestFloorPrice(bnbUsdRate)));
   const [busy, setBusy] = useState(false);
   const [step, setStep] = useState<string | null>(null);
@@ -28,18 +35,12 @@ export function SellControls({ tokenId, onChanged }: { tokenId: number; onChange
     args: [BigInt(tokenId)],
   });
 
-  const { writeContractAsync, data: hash } = useWriteContract();
-  const receipt = useWaitForTransactionReceipt({ hash });
-
-  useEffect(() => {
-    // The parent re-reads its holdings; the local step label clears when the next action starts.
-    if (receipt.isSuccess) onChanged?.();
-  }, [receipt.isSuccess, onChanged]);
+  const { writeContractAsync } = useWriteContract();
 
   const seller = listing.data?.[0] as `0x${string}` | undefined;
   const listedPrice = listing.data?.[1] as bigint | undefined;
-  const listed = seller && seller !== "0x0000000000000000000000000000000000000000";
-  const mine = listed && address && seller.toLowerCase() === address.toLowerCase();
+  const listed = Boolean(seller) && seller !== "0x0000000000000000000000000000000000000000";
+  const mine = listed && address && seller?.toLowerCase() === address.toLowerCase();
 
   const priceWei = (() => {
     try {
@@ -50,13 +51,23 @@ export function SellControls({ tokenId, onChanged }: { tokenId: number; onChange
   })();
 
   async function handleList() {
-    if (!address || priceWei <= 0n) return;
+    if (!address || priceWei <= 0n || busy) return;
     setBusy(true);
     setProblem(null);
     try {
       const [approved, operator] = await Promise.all([
-        readContractApproved(config, tokenId),
-        readContractOperator(config, address),
+        readContract(config, {
+          address: gardenAddress,
+          abi: agentMintGardenAbi,
+          functionName: "getApproved",
+          args: [BigInt(tokenId)],
+        }),
+        readContract(config, {
+          address: gardenAddress,
+          abi: agentMintGardenAbi,
+          functionName: "isApprovedForAll",
+          args: [address, marketAddress],
+        }),
       ]);
 
       if (!approved && !operator) {
@@ -71,13 +82,44 @@ export function SellControls({ tokenId, onChanged }: { tokenId: number; onChange
       }
 
       setStep("Listing…");
-      await writeContractAsync({
+      const listHash = await writeContractAsync({
         address: marketAddress,
         abi: marketAbi,
         functionName: "list",
         args: [BigInt(tokenId), priceWei],
       });
+
       setStep("Waiting for the block…");
+      await waitForTransactionReceipt(config, { hash: listHash });
+      await listing.refetch();
+      onChanged?.();
+      setStep(null);
+    } catch (error) {
+      setProblem(decodeMarketError(error));
+      setStep(null);
+    } finally {
+      // Only here, after the receipt — a hash alone does not mean the listing exists.
+      setBusy(false);
+    }
+  }
+
+  async function handleCancel() {
+    if (busy) return;
+    setBusy(true);
+    setProblem(null);
+    try {
+      setStep("Cancelling…");
+      const cancelHash = await writeContractAsync({
+        address: marketAddress,
+        abi: marketAbi,
+        functionName: "cancel",
+        args: [BigInt(tokenId)],
+      });
+      setStep("Waiting for the block…");
+      await waitForTransactionReceipt(config, { hash: cancelHash });
+      await listing.refetch();
+      onChanged?.();
+      setStep(null);
     } catch (error) {
       setProblem(decodeMarketError(error));
       setStep(null);
@@ -86,23 +128,26 @@ export function SellControls({ tokenId, onChanged }: { tokenId: number; onChange
     }
   }
 
-  async function handleCancel() {
-    setBusy(true);
-    setProblem(null);
-    try {
-      setStep("Cancelling…");
-      await writeContractAsync({
-        address: marketAddress,
-        abi: marketAbi,
-        functionName: "cancel",
-        args: [BigInt(tokenId)],
-      });
-    } catch (error) {
-      setProblem(decodeMarketError(error));
-    } finally {
-      setStep(null);
-      setBusy(false);
-    }
+  if (!isOnTestnet) {
+    return (
+      <div className="sell">
+        <p className="sell-line muted">
+          Switch the wallet to BSC Testnet before listing — the market only exists on chain{" "}
+          {bscTestnet.id}.
+        </p>
+        <button
+          className="sell-button"
+          disabled={switching}
+          onClick={() => void switchToTestnet()}
+          type="button"
+        >
+          {switching
+            ? "Switching…"
+            : `Switch to BSC Testnet${chainId ? ` (on ${chainId})` : ""}`}
+        </button>
+        {switchError && <p className="sell-error">{switchError}</p>}
+      </div>
+    );
   }
 
   if (mine) {
@@ -113,7 +158,7 @@ export function SellControls({ tokenId, onChanged }: { tokenId: number; onChange
           <span className="sell-usd">≈ {formatUsd(tbnbToUsd(listedPrice ?? 0n, bnbUsdRate))}</span>
         </p>
         <button className="sell-button ghost" disabled={busy} onClick={handleCancel} type="button">
-          {busy ? step ?? "Working…" : "Cancel listing"}
+          {busy ? (step ?? "Working…") : "Cancel listing"}
         </button>
         {problem && <p className="sell-error">{problem}</p>}
       </div>
@@ -146,36 +191,9 @@ export function SellControls({ tokenId, onChanged }: { tokenId: number; onChange
         onClick={handleList}
         type="button"
       >
-        {busy ? step ?? "Working…" : `List for ${describePrice(priceWei, bnbUsdRate).tbnb} tBNB`}
+        {busy ? (step ?? "Working…") : `List for ${formatTbnb(priceWei)} tBNB`}
       </button>
       {problem && <p className="sell-error">{problem}</p>}
     </div>
   );
-}
-
-async function readContractApproved(
-  config: ReturnType<typeof useConfig>,
-  tokenId: number,
-): Promise<boolean> {
-  const { readContract } = await import("wagmi/actions");
-  const approved = await readContract(config, {
-    address: gardenAddress,
-    abi: agentMintGardenAbi,
-    functionName: "getApproved",
-    args: [BigInt(tokenId)],
-  });
-  return String(approved).toLowerCase() === marketAddress.toLowerCase();
-}
-
-async function readContractOperator(
-  config: ReturnType<typeof useConfig>,
-  owner: `0x${string}`,
-): Promise<boolean> {
-  const { readContract } = await import("wagmi/actions");
-  return readContract(config, {
-    address: gardenAddress,
-    abi: agentMintGardenAbi,
-    functionName: "isApprovedForAll",
-    args: [owner, marketAddress],
-  });
 }
