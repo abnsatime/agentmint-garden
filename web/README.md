@@ -32,6 +32,9 @@ environment file.
 | `NEXT_PUBLIC_BSC_TESTNET_RPC_URL` | Read-only JSON-RPC endpoint |
 | `NEXT_PUBLIC_CONTRACT_ADDRESS` | `AgentMintGarden` address |
 | `NEXT_PUBLIC_DEPLOYMENT_BLOCK` | Block the contract was created in |
+| `NEXT_PUBLIC_MARKET_ADDRESS` | `AgentMintMarket` address |
+| `NEXT_PUBLIC_MARKET_DEPLOYMENT_BLOCK` | Block the market was created in |
+| `NEXT_PUBLIC_BNB_USD_RATE` | Indicative BNB/USD rate used for the dollar hints |
 | `NEXT_PUBLIC_DEBUG` | `true` shows the footer state line (chain / supply / blocker). Leave unset for public builds |
 
 ## Structure
@@ -41,6 +44,7 @@ src/app/page.tsx    landing page: hero, live stats, policy, call to action
 src/app/mint/       the mint route: stats, quantity stepper, artwork preview, transaction states
 src/app/gallery/    the gallery route: every minted token, read from tokenURI and GardenMinted logs
 src/app/me/         the wallet route: holdings, mint history, transfers in and out, traits
+src/app/market/     the market route: fixed-price listings, buy and sell
 src/app/            layout, providers, globals.css (design tokens)
 src/lib/contracts   address, ABI subset, explorer links
 src/lib/mint        pure logic: pricing mirror, gate states, error decoding, art preview

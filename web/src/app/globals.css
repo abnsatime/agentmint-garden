@@ -1498,6 +1498,132 @@ button:disabled {
   text-transform: uppercase;
 }
 
+/* ---------- market ---------- */
+
+.market-links {
+  display: flex;
+  gap: 18px;
+  flex-wrap: wrap;
+  margin: 14px 0 0;
+  font-size: 13px;
+}
+
+.market-card {
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--panel);
+}
+
+.market-price {
+  margin: 0 0 4px;
+  color: var(--white);
+  font: 700 15px/1.2 ui-monospace, monospace;
+}
+
+.market-buy {
+  width: 100%;
+  min-height: 44px;
+  margin-top: 12px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--lime);
+  color: #06100d;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.market-buy:hover:not(:disabled) {
+  background: #c2ff96;
+}
+
+.market-buy:disabled {
+  background: #24382f;
+  color: #7f948b;
+  opacity: 1;
+}
+
+.sell {
+  margin: 12px 0 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line-soft);
+}
+
+.sell-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #0a1713;
+}
+
+.sell-field span {
+  color: var(--faint);
+  font: 700 9px/1 ui-monospace, monospace;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.sell-field input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: none;
+  color: var(--white);
+  font: 700 13px/1.4 ui-monospace, monospace;
+  outline: none;
+}
+
+.sell-unit {
+  color: var(--faint);
+}
+
+.sell-usd {
+  margin: 6px 0 0;
+  color: var(--faint);
+  font: 600 10px/1.4 ui-monospace, monospace;
+}
+
+.sell-button {
+  width: 100%;
+  min-height: 40px;
+  margin-top: 8px;
+  border: 0;
+  border-radius: 10px;
+  background: rgba(173, 255, 122, 0.16);
+  color: var(--lime);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.sell-button:hover:not(:disabled) {
+  background: rgba(173, 255, 122, 0.26);
+}
+
+.sell-button.ghost {
+  background: transparent;
+  border: 1px solid var(--line);
+  color: var(--muted);
+}
+
+.sell-line {
+  margin: 0;
+  color: #b6c6bf;
+  font-size: 12px;
+}
+
+.sell-line.muted {
+  color: var(--faint);
+}
+
+.sell-error {
+  margin: 8px 0 0;
+  color: var(--orange);
+  font-size: 11px;
+}
+
 /* ---------- responsive ---------- */
 
 @media (max-width: 980px) {

@@ -6,6 +6,7 @@ import { relativeTime } from "@/lib/gallery";
 import { shortAddress } from "@/lib/format";
 import { tokenExplorerUrl, transactionExplorerUrl } from "@/lib/contracts";
 import { useMyGarden } from "@/lib/use-my-garden";
+import { SellControls } from "./sell-controls";
 import { WalletButton } from "./wallet-button";
 
 function nowSeconds() {
@@ -125,6 +126,8 @@ export function MyGardenPanel() {
                     </li>
                   ))}
                 </ul>
+
+                <SellControls onChanged={() => refresh()} tokenId={holding.tokenId} />
 
                 <p className="holding-note">
                   {holding.mintedHere ? "minted here" : `received from ${holding.from ? shortAddress(holding.from) : "another wallet"}`}
