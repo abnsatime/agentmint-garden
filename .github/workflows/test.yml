@@ -74,3 +74,59 @@ jobs:
 
       - name: Build static export
         run: pnpm build
+
+  indexer:
+    name: Indexer service
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: indexer
+    env:
+      DATABASE_URL: postgres://garden:garden@127.0.0.1:5432/garden
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: garden
+          POSTGRES_PASSWORD: garden
+          POSTGRES_DB: garden
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U garden -d garden"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 12.16.1
+
+      - name: Install Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+          cache-dependency-path: indexer/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Apply migrations
+        run: pnpm db:migrate
+
+      - name: Tests
+        run: pnpm test
+
+      - name: Build
+        run: pnpm build
