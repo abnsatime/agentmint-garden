@@ -1,0 +1,65 @@
+{
+  "network": "bsc-testnet",
+  "networkName": "BNB Smart Chain Testnet",
+  "chainId": 97,
+  "contractName": "AgentMintMarket",
+  "address": "0x153bbf8fc8eD31ab8e73d9b5AE3076d73d3424e2",
+  "transactionHash": "0xa78471d3a4e2c1d3584d887e2b62253545990eb6a9205869c6d4d78d0be901a4",
+  "blockNumber": 140688854,
+  "blockTimestamp": "2026-11-04T02:53:20Z",
+  "blockTimestampLocal": "2026-11-04 10:53:20 +08:00",
+  "deployer": "0xF040275C3e38Cb018C491BC8a5A5437D86178A67",
+  "collection": "0x5bEd1F9d23FaFdE1A4b81215a2888812494d4107",
+  "constructorArgs": {
+    "collectionAddress": "0x5bEd1F9d23FaFdE1A4b81215a2888812494d4107"
+  },
+  "constructorArgsHex": "0x0000000000000000000000005bed1f9d23fafde1a4b81215a2888812494d4107",
+  "model": {
+    "custody": "approval (tokens stay in the seller's wallet)",
+    "fee": "0",
+    "payment": "exact price, forwarded to the seller in the same transaction",
+    "listingFunctions": [
+      "list",
+      "updatePrice",
+      "cancel",
+      "buy"
+    ]
+  },
+  "compiler": {
+    "solcVersion": "0.8.26",
+    "optimizer": true,
+    "optimizerRuns": 200,
+    "evmVersion": "cancun",
+    "viaIR": false,
+    "bytecodeHash": "ipfs"
+  },
+  "bytecode": {
+    "runtimeSizeBytes": 2595,
+    "initcodeSizeBytes": 2791,
+    "runtimeKeccak256": "0x098ba199803d1b83ca962d9cbc08dbab541edad340680584b06522ba4ae8b6ec"
+  },
+  "deployment": {
+    "nonce": 3,
+    "value": "0",
+    "gasUsed": 637505,
+    "gasPriceWei": 132000000,
+    "feeWei": "84150660000000",
+    "feeTbnb": "0.00008415066"
+  },
+  "source": {
+    "repository": "https://github.com/abnsatime/agentmint-garden",
+    "contractCommit": "de4e00f",
+    "recordCommit": "cc9404b",
+    "fileModesNormalised": "f1f70a2"
+  },
+  "explorer": {
+    "address": "https://testnet.bscscan.com/address/0x153bbf8fc8eD31ab8e73d9b5AE3076d73d3424e2",
+    "transaction": "https://testnet.bscscan.com/tx/0xa78471d3a4e2c1d3584d887e2b62253545990eb6a9205869c6d4d78d0be901a4"
+  },
+  "verification": {
+    "provider": "bscscan",
+    "status": "pending",
+    "guid": "srwjn3p352ukg5m9cg6ae7xwgtg4ketgwrgfbwnrtyzfcg2uyz",
+    "notes": "Submitted twice with the Foundry build and constructor arguments; BscScan's testnet queue kept answering 'Pending in queue' for several minutes. The runtime bytecode reconciles byte-for-byte against a local forge build (120 bytes differ, all inside the immutable collection address, and patching them reproduces the on-chain keccak)."
+  }
+}

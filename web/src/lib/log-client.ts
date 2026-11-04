@@ -33,7 +33,7 @@ export type RawLogShape = {
 /** Pages through a block range with a topic filter and returns the raw logs. */
 export async function collectLogs(
   address: `0x${string}`,
-  topics: readonly (Hex | null)[],
+  topics: readonly (Hex | readonly Hex[] | null)[],
   fromBlock: bigint,
   toBlock: bigint,
 ): Promise<RawLogShape[]> {
@@ -47,7 +47,7 @@ export async function collectLogs(
       params: [
         {
           address,
-          topics: [...topics],
+          topics: [...topics] as (Hex | Hex[] | null)[],
           fromBlock: `0x${cursor.toString(16)}`,
           toBlock: `0x${end.toString(16)}`,
         },

@@ -14,6 +14,7 @@ export function SiteHeader() {
       <nav className="nav-links" aria-label="Sections">
         <Link href="/mint">Mint</Link>
         <Link href="/gallery">Gallery</Link>
+        <Link href="/market">Market</Link>
         <Link href="/me">My garden</Link>
       </nav>
 

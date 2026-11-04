@@ -110,14 +110,37 @@ pnpm dev     # iterate here; forward port 3000 to your browser if you work from 
 pnpm build   # static export into web/out
 ```
 
-Two routes are exported: `/` is a landing page and `/mint` is the mint flow. Pushes to `main`
-publish the export to GitHub Pages at
-<https://abnsatime.github.io/agentmint-garden/> (`/mint` for the mint page).
+Five routes are exported. Pushes to `main` publish them to GitHub Pages at
+<https://abnsatime.github.io/agentmint-garden/>:
 
-It reads supply, price, wallet allowance and pause state from chain, re-quotes with
-`quoteMintPrice` immediately before signing so the exact payment always matches the
-contract's requirement, previews the artwork of the next token with the same hue rule
-`tokenURI` uses, and renders the real on-chain metadata once a mint confirms.
+| Route | What it is |
+|---|---|
+| `/` | landing page |
+| `/mint` | mint flow: live quote, gas estimate, exact payment |
+| `/gallery` | every minted token, its artwork and mint provenance |
+| `/me` | the connected wallet's holdings, mint history and transfers, plus listing controls |
+| `/market` | the fixed-price order book, buy and sell |
+
+The mint flow reads supply, price, wallet allowance and pause state from chain, re-quotes with
+`quoteMintPrice` immediately before signing so the exact payment always matches the contract's
+requirement, previews the artwork of the next token with the same hue rule `tokenURI` uses, and
+renders the real on-chain metadata once a mint confirms.
+
+## Market
+
+`AgentMintMarket` (`0x153bbf8fc8eD31ab8e73d9b5AE3076d73d3424e2`) is a separate fixed-price
+listing contract: the collection itself has no trading logic.
+
+- a listing is an **approval, not an escrow** — the token stays in the seller's wallet until it
+  sells, so listing costs one `approve` and the seller keeps using the token
+- `buy` takes the exact ask, transfers the token and forwards the full amount to the seller in
+  the same transaction; the market charges no fee and never holds funds
+- `list`, `updatePrice` and `cancel` are seller-only; a listing whose seller moved the token
+  away reverts with `MarketStaleListing` instead of failing inside `transferFrom`
+
+The record lives in [`deployments/bsc-testnet-market.json`](deployments/bsc-testnet-market.json).
+Dollar hints in the UI use a configured rate (`NEXT_PUBLIC_BNB_USD_RATE`); testnet tBNB has no
+value, so they are indicative only.
 
 ## Roadmap
 
